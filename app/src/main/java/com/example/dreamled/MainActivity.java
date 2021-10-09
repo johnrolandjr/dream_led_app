@@ -78,6 +78,8 @@ public class MainActivity extends AppCompatActivity {
 
     private static int mode = Constants.DEV_MODE_NOT_CONNECTED;
 
+    private static int actualMaxMtuSize;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -130,13 +132,38 @@ public class MainActivity extends AppCompatActivity {
                 for(BluetoothGattService service : gatt.getServices()) {
                     uuids.add(service.getUuid());
                 }
-                gatt.disconnect();
+                gatt.requestMtu(Constants.GATT_MAX_MTU_SIZE);
+                //gatt.disconnect();
+            }
+
+            @Override
+            public void onMtuChanged(BluetoothGatt gatt, int mtu, int status) {
+                super.onMtuChanged(gatt, mtu, status);
+                actualMaxMtuSize = Constants.GATT_MIN_MTU_SIZE;
+                if(status == BluetoothGatt.GATT_SUCCESS)
+                {
+                    actualMaxMtuSize = mtu;
+                }
+                // Let's determine if our main mode characteristic is readable
+
+                BluetoothGattService mainService = gatt.getService(UUID.fromString(Constants.str_ms_uuid));
+                BluetoothGattCharacteristic mainChar = null;
+                if(mainService != null)
+                {
+                    mainChar = mainService.getCharacteristic(UUID.fromString(Constants.str_ms_char_uuid));
+                    if(mainChar != null)
+                    {
+                        gatt.readCharacteristic(mainChar);
+                    }
+                }
             }
 
             @Override
             public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
                 super.onCharacteristicRead(gatt, characteristic, status);
-                if(status != BluetoothGatt.GATT_SUCCESS)
+                /*
+                // @future: revisit, logic is not working
+                if( status != BluetoothGatt.GATT_SUCCESS)
                 {
                     // Tried to read a non readable characteristic!
                     return;
@@ -150,6 +177,7 @@ public class MainActivity extends AppCompatActivity {
                 {
                     // Update the mode according to what we read
                 }
+                 */
             }
         };
 
