@@ -91,7 +91,7 @@ public class DeviceListAdapter extends RecyclerView.Adapter<DeviceListAdapter.mV
     public void add(ScanResult scanResult) {
 
         int existingPosition = getPosition(scanResult.getDevice().getAddress());
-        DeviceInfoModel discoveredDevice = new DeviceInfoModel( scanResult.getDevice().getName(), scanResult.getDevice().getAddress());
+        DeviceInfoModel discoveredDevice = new DeviceInfoModel(scanResult.getDevice());
 
         if (existingPosition >= 0) {
             // Device is already in list, update its record.

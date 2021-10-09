@@ -5,6 +5,10 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.Manifest;
 import android.bluetooth.BluetoothGatt;
+import android.bluetooth.BluetoothGattCallback;
+import android.bluetooth.BluetoothGattCharacteristic;
+import android.bluetooth.BluetoothGattService;
+import android.bluetooth.BluetoothProfile;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanFilter;
@@ -30,9 +34,11 @@ import android.widget.Button;
 import android.widget.Toast;
 
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 public class MainActivity extends AppCompatActivity {
@@ -43,15 +49,19 @@ public class MainActivity extends AppCompatActivity {
      */
     private static final long SCAN_PERIOD = 5000;
     private static BluetoothAdapter BA;
+    private static boolean scanning = false;
     private BluetoothLeScanner bleScanner;
     private ScanCallback mScanCallback;
     private Handler mHandler;
     private DeviceListAdapter discoveredDevAdapter;
     RecyclerView rvDiscoveredDev;
     private BluetoothGatt bleGatt;
+    private BluetoothGattCallback bleGattCb;
 
     private ArrayList<DeviceInfoModel> discoveredDevList;
     private onClickInterface onDevDiscoveredClickInterface;
+
+    private ArrayList<UUID> uuids;
 
     // Constants
     private static final int PERMISSION_REQUEST_FINE_LOCATION = 1;
@@ -81,10 +91,47 @@ public class MainActivity extends AppCompatActivity {
                 if(selectedBleDevice.getDeviceName().equals(Constants.bleDeviceName))
                 {
                     // Selected a Ble Device that corresponds to the device we've created in FW
+                    // Stop scanning if we are still scanning
+                    if(scanning) {
+                        stopScanning();
+                    }
+                    bleGatt = selectedBleDevice.getDevice().connectGatt(MainActivity.this, false, bleGattCb);
                 }
             }
         };
-        test_add_device();
+
+        uuids = new ArrayList<UUID>();
+
+        bleGattCb = new BluetoothGattCallback() {
+            @Override
+            public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
+                super.onConnectionStateChange(gatt, status, newState);
+                if(status != BluetoothGatt.GATT_SUCCESS){
+                    gatt.disconnect();
+                    return;
+                }
+                if(newState == BluetoothProfile.STATE_CONNECTED){
+                    bleGatt = gatt;
+                    gatt.discoverServices();
+                }
+                else if (newState == BluetoothProfile.STATE_DISCONNECTED){
+                    bleGatt = null;
+                    gatt.close();
+                } else {
+                    // Some other state change that I've decided to not do anything extra
+                }
+            }
+
+            @Override
+            public void onServicesDiscovered(BluetoothGatt gatt, int status) {
+                super.onServicesDiscovered(gatt, status);
+                for(BluetoothGattService service : gatt.getServices()) {
+                    uuids.add(service.getUuid());
+                }
+                gatt.disconnect();
+            }
+        };
+
         setDiscoveredRvAdapter();
 
         ask_for_needed_ble_permissions();
@@ -115,7 +162,7 @@ public class MainActivity extends AppCompatActivity {
                     for (BluetoothDevice device : pairedDevices) {
                         String deviceName = device.getName();
                         String deviceHardwareAddress = device.getAddress(); // MAC address
-                        DeviceInfoModel deviceInfoModel = new DeviceInfoModel(deviceName, deviceHardwareAddress);
+                        DeviceInfoModel deviceInfoModel = new DeviceInfoModel(device);
                         // If device is already in list, do not add it to the list
                         if (!deviceList.contains(deviceInfoModel) && deviceInfoModel.getDeviceName() == "Beau") {
                             deviceList.add(deviceInfoModel);
@@ -173,10 +220,6 @@ public class MainActivity extends AppCompatActivity {
         rvDiscoveredDev.setLayoutManager(layoutManager);
         rvDiscoveredDev.setItemAnimator(new DefaultItemAnimator());
         rvDiscoveredDev.setAdapter(discoveredDevAdapter);
-    }
-
-    private void test_add_device() {
-        discoveredDevList.add(new DeviceInfoModel("BLE Test Name 1", "XX:XX:XX:XX:XX:XX"));
     }
 
     private void ask_for_needed_ble_permissions() {
@@ -262,6 +305,7 @@ public class MainActivity extends AppCompatActivity {
                     + TimeUnit.SECONDS.convert(SCAN_PERIOD, TimeUnit.MILLISECONDS) + " "
                     + getString(R.string.seconds);
             Toast.makeText(getApplicationContext(), toastText, Toast.LENGTH_LONG).show();
+            scanning = true;
         } else {
             Toast.makeText(getApplicationContext(), R.string.already_scanning, Toast.LENGTH_SHORT).show();
         }
@@ -279,6 +323,7 @@ public class MainActivity extends AppCompatActivity {
 
         // Even if no new results, update 'last seen' times.
         discoveredDevAdapter.notifyDataSetChanged();
+        scanning = false;
     }
 
     /**
