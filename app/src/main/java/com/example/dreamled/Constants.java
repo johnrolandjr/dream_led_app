@@ -12,10 +12,17 @@ public class Constants {
      *
      * Bluetooth requires a certain format for UUIDs associated with Services.
      */
-    public static final ParcelUuid Service_UUID = ParcelUuid
-            .fromString("0000b81d-0000-1000-8000-00805f9b34fb");
+    public static final ParcelUuid ms_UUID = ParcelUuid
+            .fromString("00002423-1212-efde-1523-785feabcd123");
+    public static final ParcelUuid ms_button_char_UUID = ParcelUuid
+            .fromString("00002424-1212-efde-1523-785feabcd123");
 
     public static final int REQUEST_ENABLE_BT = 1;
 
-    public static String bleDeviceName = "Beau";
+    public static String bleDeviceName = "Dream Led";
+
+    // BLE Device Modes
+    public static final int DEV_MODE_NOT_CONNECTED = -1;
+    public static final int DEV_MODE_BASIC_ANIM = 0;
+    public static final int DEV_MODE_AUDIO_BASED = 1;
 }

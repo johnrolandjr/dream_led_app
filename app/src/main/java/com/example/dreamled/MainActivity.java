@@ -76,6 +76,8 @@ public class MainActivity extends AppCompatActivity {
     private final int DISCONNECTING = 6;
     private final int INTERROGATE = 7;
 
+    private static int mode = Constants.DEV_MODE_NOT_CONNECTED;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -130,6 +132,25 @@ public class MainActivity extends AppCompatActivity {
                 }
                 gatt.disconnect();
             }
+
+            @Override
+            public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
+                super.onCharacteristicRead(gatt, characteristic, status);
+                if(status != BluetoothGatt.GATT_SUCCESS)
+                {
+                    // Tried to read a non readable characteristic!
+                    return;
+                }
+                if(status != BluetoothGatt.GATT_READ_NOT_PERMITTED)
+                {
+                    // characteristiic really not readable!
+                    return;
+                }
+                if(status == BluetoothGatt.GATT_SUCCESS)
+                {
+                    // Update the mode according to what we read
+                }
+            }
         };
 
         setDiscoveredRvAdapter();
@@ -164,7 +185,7 @@ public class MainActivity extends AppCompatActivity {
                         String deviceHardwareAddress = device.getAddress(); // MAC address
                         DeviceInfoModel deviceInfoModel = new DeviceInfoModel(device);
                         // If device is already in list, do not add it to the list
-                        if (!deviceList.contains(deviceInfoModel) && deviceInfoModel.getDeviceName() == "Beau") {
+                        if (!deviceList.contains(deviceInfoModel) && deviceInfoModel.getDeviceName().equals(Constants.bleDeviceName)) {
                             deviceList.add(deviceInfoModel);
                         }
                     }
@@ -254,6 +275,16 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
+/*
+    private void readStartingMode(){
+        if(bleGatt != null)
+        {
+            UUID genServiceUuid = UUID.fromString(Constants.Service_UUID);
+            BluetoothGattCharacteristic genChar = bleGatt.getService(genServiceUuid).getCharacteristic();
+            bleGatt.readCharacteristic(genChar);
+        }
+    }
+ */
 
     /* ============================ Terminate Connection at Back press ====================== */
     @Override
@@ -361,7 +392,7 @@ public class MainActivity extends AppCompatActivity {
 
         ScanFilter.Builder builder = new ScanFilter.Builder();
         // Comment out the below line to see all BLE devices around you
-        //builder.setServiceUuid(Constants.Service_UUID);
+        builder.setServiceUuid(Constants.ms_UUID);
         scanFilters.add(builder.build());
 
         return scanFilters;
