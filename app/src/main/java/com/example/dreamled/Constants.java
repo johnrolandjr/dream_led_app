@@ -24,6 +24,21 @@ public class Constants {
     public static final int GATT_MIN_MTU_SIZE = 23;
     public static final int GATT_MAX_MTU_SIZE = 517;
 
+    public static final int GATT_TIMEOUT = 8;
+
+    public static final String INTENT_EXTRA_MODE = "state_mode";
+    public static final String INTENT_EXTRA_DIR = "state_dir";
+    public static final String INTENT_EXTRA_STAGGER = "state_stagger";
+    public static final String INTENT_EXTRA_COLOR = "state_color";
+
+    public static final int NUM_STANDARD_COLORS = 6;
+
+    public static final int STATE_IDX_MODE    = 0;
+    public static final int STATE_IDX_LED_DIR = 1;
+    public static final int STATE_IDX_STAGGER = 2;
+    public static final int STATE_IDX_COLOR   = 3;
+    public static final int STATE_LEN         = 4;
+
     public static String bleDeviceName = "Dream Led";
 
     // BLE Device Modes

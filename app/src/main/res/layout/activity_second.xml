@@ -5,26 +5,312 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <TextView
-        android:id="@+id/textView"
+    <!-- Kill Bluetooth on Device Button -->
+    <Button
+        android:id="@+id/btnDisconnectAndKill"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Welcome to second activity."
-        android:textSize="24sp"
-        app:layout_constraintBottom_toBottomOf="parent"
+        android:layout_marginTop="16dp"
+        android:backgroundTint="#FF0000"
+        android:text="@string/btnDiscAndKill"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintHorizontal_bias="0.90"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <Button
-        android:id="@+id/btnBack"
+    <!-- Animation Mode -->
+    <TextView
+        android:id="@+id/activeModeTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Back to home"
-        app:layout_constraintBottom_toBottomOf="parent"
+        android:paddingTop="20dp"
+        android:text="@string/activeModeTitle"
+        android:textSize="24sp"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/textView" />
+        app:layout_constraintTop_toBottomOf="@+id/btnDisconnectAndKill" />
+    <LinearLayout
+        android:id="@+id/llAnimMode"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/activeModeTitle"
+        android:gravity="center_horizontal"
+        android:orientation="horizontal"
+        android:paddingTop="5dp"
+        android:paddingBottom="15dp"
+        app:layout_constraintTop_toBottomOf="@+id/activeModeTitle">
+        <ToggleButton
+            android:id="@+id/btnBasicAnimMode"
+            android:layout_width="wrap_content"
+            android:layout_height="fill_parent"
+            android:textOn="@string/btnBasicMode"
+            android:textOff="@string/btnBasicMode"
+            android:text="@string/btnBasicMode" />
+        <ToggleButton
+            android:id="@+id/btnAudioBasedMode"
+            android:layout_width="wrap_content"
+            android:layout_height="fill_parent"
+            android:textOn="@string/btnAudioMode"
+            android:textOff="@string/btnAudioMode"
+            android:text="@string/btnAudioMode" />
+    </LinearLayout>
+
+    <!-- Led Animation Direction -->
+    <TextView
+        android:id="@+id/directionTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingTop="10dp"
+        android:text="@string/directionTitle"
+        android:textSize="24sp"
+        app:layout_constraintTop_toBottomOf="@+id/llAnimMode"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+    <LinearLayout
+        android:id="@+id/llLedDirection"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/activeModeTitle"
+        android:orientation="horizontal"
+        android:paddingTop="10dp"
+        android:paddingBottom="10dp"
+        android:gravity="center_horizontal"
+        app:layout_constraintTop_toBottomOf="@+id/directionTitle">
+        <ToggleButton
+            android:id="@+id/btnDirUp"
+            android:layout_width="50dp"
+            android:layout_height="fill_parent"
+            android:textOn="@string/btnDirUp"
+            android:textOff="@string/btnDirUp"
+            android:text="@string/btnDirUp"/>
+        <ToggleButton
+            android:id="@+id/btnDirDown"
+            android:layout_width="50dp"
+            android:layout_height="fill_parent"
+            android:textOn="@string/btnDirDown"
+            android:textOff="@string/btnDirDown"
+            android:text="@string/btnDirDown"/>
+        <ToggleButton
+            android:id="@+id/btnDirLeft"
+            android:layout_width="50dp"
+            android:layout_height="fill_parent"
+            android:textOn="@string/btnDirLeft"
+            android:textOff="@string/btnDirLeft"
+            android:text="@string/btnDirLeft"/>
+        <ToggleButton
+            android:id="@+id/btnDirRight"
+            android:layout_width="50dp"
+            android:layout_height="fill_parent"
+            android:textOn="@string/btnDirRight"
+            android:textOff="@string/btnDirRight"
+            android:text="@string/btnDirRight"/>
+        <ToggleButton
+            android:id="@+id/btnDirYCenterOut"
+            android:layout_width="50dp"
+            android:layout_height="fill_parent"
+            android:textOn="@string/btnDirYCenterOut"
+            android:textOff="@string/btnDirYCenterOut"
+            android:text="@string/btnDirYCenterOut"/>
+        <ToggleButton
+            android:id="@+id/btnDirYOutCenter"
+            android:layout_width="50dp"
+            android:layout_height="fill_parent"
+            android:textOn="@string/btnDirYOutCenter"
+            android:textOff="@string/btnDirYOutCenter"
+            android:text="@string/btnDirYOutCenter"/>
+    </LinearLayout>
+
+    <!-- Stagger -->
+    <TextView
+        android:id="@+id/staggerTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingTop="10dp"
+        android:text="@string/staggerTitle"
+        android:textSize="24sp"
+        app:layout_constraintTop_toBottomOf="@+id/llLedDirection"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+    <LinearLayout
+        android:id="@+id/llStagger"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/activeModeTitle"
+        android:orientation="horizontal"
+        android:paddingTop="10dp"
+        android:paddingBottom="10dp"
+        android:gravity="center_horizontal"
+        app:layout_constraintTop_toBottomOf="@+id/staggerTitle">
+        <ToggleButton
+            android:id="@+id/btnStagNone"
+            android:layout_width="50dp"
+            android:layout_height="fill_parent"
+            android:textOn="@string/btnStagNone"
+            android:textOff="@string/btnStagNone"
+            android:text="@string/btnStagNone"/>
+        <ToggleButton
+            android:id="@+id/btnStagAsc"
+            android:layout_width="50dp"
+            android:layout_height="fill_parent"
+            android:textOn="@string/btnStagAsc"
+            android:textOff="@string/btnStagAsc"
+            android:text="@string/btnStagAsc"/>
+        <ToggleButton
+            android:id="@+id/btnStagDesc"
+            android:layout_width="50dp"
+            android:layout_height="fill_parent"
+            android:textOn="@string/btnStagDesc"
+            android:textOff="@string/btnStagDesc"
+            android:text="@string/btnStagDesc"/>
+        <ToggleButton
+            android:id="@+id/btnStagMnt"
+            android:layout_width="50dp"
+            android:layout_height="fill_parent"
+            android:textOn="@string/btnStagMnt"
+            android:textOff="@string/btnStagMnt"
+            android:text="@string/btnStagMnt"/>
+        <ToggleButton
+            android:id="@+id/btnStagVal"
+            android:layout_width="50dp"
+            android:layout_height="fill_parent"
+            android:textOn="@string/btnStagVal"
+            android:textOff="@string/btnStagVal"
+            android:text="@string/btnStagVal"/>
+    </LinearLayout>
+
+    <!-- Color -->
+    <TextView
+        android:id="@+id/colorTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingTop="10dp"
+        android:text="@string/colorTitle"
+        android:textSize="24sp"
+        app:layout_constraintTop_toBottomOf="@+id/llStagger"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+    <LinearLayout
+        android:id="@+id/llColor"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/activeModeTitle"
+        android:orientation="horizontal"
+        android:paddingTop="10dp"
+        android:paddingBottom="10dp"
+        android:gravity="center_horizontal"
+        app:layout_constraintTop_toBottomOf="@+id/colorTitle">
+        <ToggleButton
+            android:id="@+id/btnColor0"
+            android:layout_width="50dp"
+            android:layout_height="fill_parent"
+            android:textOn=""
+            android:textOff=""/>
+        <ToggleButton
+            android:id="@+id/btnColor1"
+            android:layout_width="50dp"
+            android:layout_height="fill_parent"
+            android:textOn=""
+            android:textOff=""/>
+        <ToggleButton
+            android:id="@+id/btnColor2"
+            android:layout_width="50dp"
+            android:layout_height="fill_parent"
+            android:textOn=""
+            android:textOff=""/>
+        <ToggleButton
+            android:id="@+id/btnColor3"
+            android:layout_width="50dp"
+            android:layout_height="fill_parent"
+            android:textOn=""
+            android:textOff=""/>
+        <ToggleButton
+            android:id="@+id/btnColor4"
+            android:layout_width="50dp"
+            android:layout_height="fill_parent"
+            android:textOn=""
+            android:textOff=""/>
+        <ToggleButton
+            android:id="@+id/btnColor5"
+            android:layout_width="50dp"
+            android:layout_height="fill_parent"
+            android:textOn=""
+            android:textOff=""/>
+    </LinearLayout>
+
+    <!-- Custom Color -->
+    <LinearLayout
+        android:id="@+id/llCustColor"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/llColor"
+        android:orientation="horizontal"
+        android:paddingTop="10dp"
+        android:paddingBottom="0dp"
+        android:gravity="center_horizontal"
+        app:layout_constraintTop_toBottomOf="@+id/llColor">
+        <ToggleButton
+            android:id="@+id/btnCustColor0"
+            android:layout_width="50dp"
+            android:layout_height="fill_parent"
+            android:textOn=""
+            android:textOff=""/>
+        <ToggleButton
+            android:id="@+id/btnCustColor1"
+            android:layout_width="50dp"
+            android:layout_height="fill_parent"
+            android:textOn=""
+            android:textOff=""/>
+        <ToggleButton
+            android:id="@+id/btnCustColor2"
+            android:layout_width="50dp"
+            android:layout_height="fill_parent"
+            android:textOn=""
+            android:textOff=""/>
+        <ToggleButton
+            android:id="@+id/btnCustColor3"
+            android:layout_width="50dp"
+            android:layout_height="fill_parent"
+            android:textOn=""
+            android:textOff=""/>
+        <ToggleButton
+            android:id="@+id/btnCustColor4"
+            android:layout_width="50dp"
+            android:layout_height="fill_parent"
+            android:textOn=""
+            android:textOff=""/>
+    </LinearLayout>
+    <LinearLayout
+        android:id="@+id/llCustColorUpdate"
+        android:layout_width="match_parent"
+        android:layout_height="30dp"
+        android:layout_below="@+id/llColor"
+        android:orientation="horizontal"
+        android:paddingTop="0dp"
+        android:paddingBottom="0dp"
+        android:gravity="center_horizontal"
+        app:layout_constraintTop_toBottomOf="@+id/llCustColor">
+        <Button
+            android:id="@+id/btnUpdateCustColor0"
+            android:layout_width="50dp"
+            android:layout_height="fill_parent"/>
+        <Button
+            android:id="@+id/btnUpdateCustColor1"
+            android:layout_width="50dp"
+            android:layout_height="fill_parent"/>
+        <Button
+            android:id="@+id/btnUpdateCustColor2"
+            android:layout_width="50dp"
+            android:layout_height="fill_parent"/>
+        <Button
+            android:id="@+id/btnUpdateCustColor3"
+            android:layout_width="50dp"
+            android:layout_height="fill_parent"/>
+        <Button
+            android:id="@+id/btnUpdateCustColor4"
+            android:layout_width="50dp"
+            android:layout_height="fill_parent"/>
+    </LinearLayout>
+
+
+
 </androidx.constraintlayout.widget.ConstraintLayout>

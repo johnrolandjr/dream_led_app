@@ -7,4 +7,22 @@
     <string name="scan_start_toast">Scanning for</string>
     <string name="seconds">seconds.</string>
     <string name="already_scanning">Scanning already started.</string>
+    <string name="activeModeTitle">Animation Mode</string>
+    <string name="btnBasicMode">Basic</string>
+    <string name="btnAudioMode">Audio</string>
+    <string name="directionTitle">Led Animation Direction</string>
+    <string name="btnDirUp">0</string>
+    <string name="btnDirDown">1</string>
+    <string name="btnDirLeft">2</string>
+    <string name="btnDirRight">3</string>
+    <string name="btnDirYCenterOut">4</string>
+    <string name="btnDirYOutCenter">5</string>
+    <string name="staggerTitle">Stagger</string>
+    <string name="btnStagNone">0</string>
+    <string name="btnStagAsc">1</string>
+    <string name="btnStagDesc">2</string>
+    <string name="btnStagMnt">3</string>
+    <string name="btnStagVal">4</string>
+    <string name="colorTitle">Color</string>
+    <string name="btnDiscAndKill">Disconnect and Stop Adv</string>
 </resources>

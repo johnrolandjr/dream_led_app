@@ -63,6 +63,8 @@ public class MainActivity extends AppCompatActivity {
 
     private ArrayList<UUID> uuids;
 
+    private static boolean mainActivityIsOpen;
+
     // Constants
     private static final int PERMISSION_REQUEST_FINE_LOCATION = 1;
     private static final int PERMISSION_REQUEST_BACKGROUND_LOCATION = 1;
@@ -79,11 +81,14 @@ public class MainActivity extends AppCompatActivity {
     private static int mode = Constants.DEV_MODE_NOT_CONNECTED;
 
     private static int actualMaxMtuSize;
+    private static byte[] lastModeState;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        mainActivityIsOpen = true;
+
 
 
         discoveredDevList = new ArrayList<>();
@@ -112,6 +117,13 @@ public class MainActivity extends AppCompatActivity {
                 super.onConnectionStateChange(gatt, status, newState);
                 if(status != BluetoothGatt.GATT_SUCCESS){
                     gatt.disconnect();
+                    if(status == Constants.GATT_TIMEOUT){
+                        if(!mainActivityIsOpen)
+                        {
+                            Intent mainIntent = new Intent(getApplicationContext(), MainActivity.class);
+                            startActivity(mainIntent);
+                        }
+                    }
                     return;
                 }
                 if(newState == BluetoothProfile.STATE_CONNECTED){
@@ -120,6 +132,7 @@ public class MainActivity extends AppCompatActivity {
                 }
                 else if (newState == BluetoothProfile.STATE_DISCONNECTED){
                     bleGatt = null;
+
                     gatt.close();
                 } else {
                     // Some other state change that I've decided to not do anything extra
@@ -161,23 +174,15 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
                 super.onCharacteristicRead(gatt, characteristic, status);
-                /*
-                // @future: revisit, logic is not working
-                if( status != BluetoothGatt.GATT_SUCCESS)
+                if (status == BluetoothGatt.GATT_SUCCESS)
                 {
-                    // Tried to read a non readable characteristic!
-                    return;
+                    if(mainActivityIsOpen)
+                    {
+                        // If we are still in the main Activity, transition to corresponding activity
+                        lastModeState = characteristic.getValue();
+                        transitionToActivity();
+                    }
                 }
-                if(status != BluetoothGatt.GATT_READ_NOT_PERMITTED)
-                {
-                    // characteristiic really not readable!
-                    return;
-                }
-                if(status == BluetoothGatt.GATT_SUCCESS)
-                {
-                    // Update the mode according to what we read
-                }
-                 */
             }
         };
 
@@ -251,14 +256,25 @@ public class MainActivity extends AppCompatActivity {
                 connectedThread.write(cmdText);
             }
         });*/
-        View btnOpenActivity = findViewById(R.id.btnOpenActivity);
-        btnOpenActivity.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view){
-                Intent act2Intent = new Intent(getApplicationContext(), BasicAnimModeActivity.class);
-                startActivity(act2Intent);
+    }
+
+    private void transitionToActivity() {
+        if (mainActivityIsOpen && lastModeState != null)
+        {
+            switch(lastModeState[Constants.STATE_IDX_MODE]){
+                case (Constants.DEV_MODE_BASIC_ANIM):
+                    Intent act2Intent = new Intent(getApplicationContext(), BasicAnimModeActivity.class);
+                    act2Intent.putExtra(Constants.INTENT_EXTRA_MODE, lastModeState[Constants.STATE_IDX_MODE]);
+                    act2Intent.putExtra(Constants.INTENT_EXTRA_DIR, lastModeState[Constants.STATE_IDX_LED_DIR]);
+                    act2Intent.putExtra(Constants.INTENT_EXTRA_STAGGER, lastModeState[Constants.STATE_IDX_STAGGER]);
+                    act2Intent.putExtra(Constants.INTENT_EXTRA_COLOR, lastModeState[Constants.STATE_IDX_COLOR]);
+                    startActivity(act2Intent);
+                    break;
+                case (Constants.DEV_MODE_AUDIO_BASED):
+                    // Implement later
+                    break;
             }
-        });
+        }
     }
 
     private void setDiscoveredRvAdapter() {
@@ -320,7 +336,6 @@ public class MainActivity extends AppCompatActivity {
         //@future Terminate Bluetooth LE Connection and close app
         Intent a = new Intent(Intent.ACTION_MAIN);
         a.addCategory(Intent.CATEGORY_HOME);
-        a.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(a);
     }
 
@@ -328,9 +343,16 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onResume() {
         super.onResume();
+        mainActivityIsOpen = true;
         if (!BA.isEnabled()) {
             promptEnableBluetooth();
         }
+    }
+
+    @Override
+    public void onPause(){
+        super.onPause();
+        mainActivityIsOpen = false;
     }
 
     public void promptEnableBluetooth() {
