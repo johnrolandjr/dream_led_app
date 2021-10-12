@@ -37,7 +37,7 @@ public class BleController extends Service {
     private BleControllerInterface bleCtrlIf;
     private ScanCallback mScanCallback;
     private Handler mHandler;
-    private BluetoothGatt bleGatt;
+    private static BluetoothGatt bleGatt;
 
     boolean scanning;
     private ArrayList<UUID> uuids;
@@ -270,5 +270,18 @@ public class BleController extends Service {
 
     public void connectGatt(BluetoothDevice device) {
         bleGatt = device.connectGatt(this, false, bleGattCb);
+    }
+
+    public void readCharacteristic(){
+        BluetoothGattService mainService = bleGatt.getService(UUID.fromString(Constants.str_ms_uuid));
+        BluetoothGattCharacteristic mainChar = null;
+        if(mainService != null)
+        {
+            mainChar = mainService.getCharacteristic(UUID.fromString(Constants.str_ms_char_uuid));
+            if(mainChar != null)
+            {
+                bleGatt.readCharacteristic(mainChar);
+            }
+        }
     }
 }

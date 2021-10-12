@@ -1,7 +1,13 @@
 package com.example.dreamled;
 
+import android.bluetooth.BluetoothGattCharacteristic;
+import android.bluetooth.le.ScanResult;
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ToggleButton;
@@ -9,7 +15,11 @@ import android.widget.ToggleButton;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
-public class BasicAnimModeActivity extends AppCompatActivity {
+import java.util.List;
+
+public class BasicAnimModeActivity extends AppCompatActivity implements BleControllerInterface{
+
+    BleController bleCtrl = new BleController();
 
     private static byte[] mode_state;
 
@@ -45,10 +55,28 @@ public class BasicAnimModeActivity extends AppCompatActivity {
     private static Button btnUpdateCustColor3;
     private static Button btnUpdateCustColor4;
 
+    private ServiceConnection bleServiceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            BleController.MyBinder binder = (BleController.MyBinder) service;
+            bleCtrl = binder.getService();
+            // Register this MainActivity's interface
+            bleCtrl.setInterface(BasicAnimModeActivity.this);
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+        }
+    };
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_second);
+
+        // Bind this activity to the ble service
+        Intent bindIntent = new Intent(this, BleController.class);
+        bindService(bindIntent, bleServiceConnection, Context.BIND_AUTO_CREATE);
 
         Bundle intent = getIntent().getExtras();
         mode_state = new byte[Constants.STATE_LEN];
@@ -70,6 +98,12 @@ public class BasicAnimModeActivity extends AppCompatActivity {
             }
         });
         */
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        bleCtrl.readCharacteristic();
     }
 
     private void initButtonViewStates() {
@@ -250,5 +284,28 @@ public class BasicAnimModeActivity extends AppCompatActivity {
         btnUpdateCustColor2 = (Button)findViewById(R.id.btnUpdateCustColor2);
         btnUpdateCustColor3 = (Button)findViewById(R.id.btnUpdateCustColor3);
         btnUpdateCustColor4 = (Button)findViewById(R.id.btnUpdateCustColor4);
+    }
+
+    @Override
+    public void timeoutOccurred() {
+        // If we are using this interface, we know we aren't on the main activity, transition to it
+        Intent mainIntent = new Intent(getApplicationContext(), MainActivity.class);
+        startActivity(mainIntent);
+    }
+
+    @Override
+    public void characteristicRead(BluetoothGattCharacteristic characteristic) {
+        mode_state = characteristic.getValue();
+        updateButtonViewStates(mode_state);
+    }
+
+    @Override
+    public void onBatchScanResults(List<ScanResult> results) {
+
+    }
+
+    @Override
+    public void onScanResult(ScanResult result) {
+
     }
 }

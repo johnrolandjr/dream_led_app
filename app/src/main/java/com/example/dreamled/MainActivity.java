@@ -49,14 +49,12 @@ import java.util.concurrent.TimeUnit;
 public class MainActivity extends AppCompatActivity implements BleControllerInterface {
     private static final String TAG = MainActivity.class.getSimpleName();
 
-    private Handler mHandler;
     private DeviceListAdapter discoveredDevAdapter;
     RecyclerView rvDiscoveredDev;
 
 
     private ArrayList<DeviceInfoModel> discoveredDevList;
     private onClickInterface onDevDiscoveredClickInterface;
-
 
     private static boolean mainActivityIsOpen;
 
@@ -96,10 +94,6 @@ public class MainActivity extends AppCompatActivity implements BleControllerInte
         setDiscoveredRvAdapter();
 
         ask_for_needed_ble_permissions();
-
-        // Initialize class object to the default bluetooth adapter for future use
-
-        mHandler = new Handler();
 
         // UI Initialization
         final Button buttonScan = findViewById(R.id.buttonScan);
@@ -165,7 +159,6 @@ public class MainActivity extends AppCompatActivity implements BleControllerInte
     }
 
     private ServiceConnection bleServiceConnection = new ServiceConnection() {
-
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
             MyBinder binder = (MyBinder) service;
@@ -176,7 +169,6 @@ public class MainActivity extends AppCompatActivity implements BleControllerInte
 
         @Override
         public void onServiceDisconnected(ComponentName name) {
-
         }
     };
 
