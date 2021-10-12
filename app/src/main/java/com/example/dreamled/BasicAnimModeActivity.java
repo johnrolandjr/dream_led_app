@@ -88,7 +88,6 @@ public class BasicAnimModeActivity extends AppCompatActivity implements BleContr
         initButtonViews();
         initButtonViewStates();
         updateButtonViewStates(mode_state);
-
         /*
         View btnBack = findViewById(R.id.btnBack);
         btnBack.setOnClickListener(new View.OnClickListener() {
@@ -307,5 +306,34 @@ public class BasicAnimModeActivity extends AppCompatActivity implements BleContr
     @Override
     public void onScanResult(ScanResult result) {
 
+    }
+
+    public void colorSelected(View view) {
+        byte colorIdx = getColorIdxByView(view);
+        //if(colorIdx != Byte.MIN_VALUE)
+        if(colorIdx == 1)
+        {
+            mode_state[Constants.STATE_IDX_COLOR] = colorIdx;
+            bleCtrl.writeCharacteristic(mode_state);
+        }
+        else
+        {
+            // Testing: perform a characteristic read
+            bleCtrl.readCharacteristic();
+        }
+    }
+
+    private byte getColorIdxByView(View view) {
+        byte idx;
+        switch(view.getId())
+        {
+            case(R.id.btnColor1):
+                idx = 1;
+                break;
+            default:
+                idx = Byte.MIN_VALUE;
+                break;
+        }
+        return idx;
     }
 }

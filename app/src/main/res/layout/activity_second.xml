@@ -209,12 +209,14 @@
             android:id="@+id/btnColor1"
             android:layout_width="50dp"
             android:layout_height="fill_parent"
+            android:onClick="colorSelected"
             android:textOn=""
             android:textOff=""/>
         <ToggleButton
             android:id="@+id/btnColor2"
             android:layout_width="50dp"
             android:layout_height="fill_parent"
+            android:onClick="colorSelected"
             android:textOn=""
             android:textOff=""/>
         <ToggleButton

@@ -1,5 +1,8 @@
 package com.example.dreamled;
 
+import static android.bluetooth.BluetoothGattCharacteristic.PROPERTY_WRITE;
+import static android.bluetooth.BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE;
+
 import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -281,6 +284,25 @@ public class BleController extends Service {
             if(mainChar != null)
             {
                 bleGatt.readCharacteristic(mainChar);
+            }
+        }
+    }
+    public void writeCharacteristic(byte[] mode_state) {
+        BluetoothGattService mainService = bleGatt.getService(UUID.fromString(Constants.str_ms_uuid));
+        BluetoothGattCharacteristic mainChar = null;
+        if(mainService != null)
+        {
+            mainChar = mainService.getCharacteristic(UUID.fromString(Constants.str_ms_char_uuid));
+            if(mainChar != null)
+            {
+                int properties = mainChar.getProperties();
+                if((properties & PROPERTY_WRITE) != 0)
+                {
+                    // Property is writable
+                    mainChar.setValue(mode_state);
+                    mainChar.setWriteType(PROPERTY_WRITE);
+                    bleGatt.writeCharacteristic(mainChar);
+                }
             }
         }
     }
