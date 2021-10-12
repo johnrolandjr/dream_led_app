@@ -93,11 +93,20 @@ public class BleController extends Service {
     }
 
     public Set<BluetoothDevice> getBondedDevices() {
+        checkNullBA();
         return BA.getBondedDevices();
     }
 
     public boolean isEnabled() {
+        checkNullBA();
         return BA.isEnabled();
+    }
+
+    private void checkNullBA() {
+        if(BA == null)
+        {
+            BA = BluetoothAdapter.getDefaultAdapter();
+        }
     }
 
     public class MyBinder extends Binder {
