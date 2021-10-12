@@ -4,6 +4,7 @@ import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.Manifest;
+import com.example.dreamled.BleController.MyBinder;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothGattCharacteristic;
@@ -14,6 +15,9 @@ import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanFilter;
 import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.ScanSettings;
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -28,6 +32,7 @@ import android.bluetooth.BluetoothDevice;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Handler;
+import android.os.IBinder;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -41,27 +46,17 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements BleControllerInterface {
     private static final String TAG = MainActivity.class.getSimpleName();
 
-    /**
-     * Stops scanning after 5 seconds.
-     */
-    private static final long SCAN_PERIOD = 5000;
-    private static BluetoothAdapter BA;
-    private static boolean scanning = false;
-    private BluetoothLeScanner bleScanner;
-    private ScanCallback mScanCallback;
     private Handler mHandler;
     private DeviceListAdapter discoveredDevAdapter;
     RecyclerView rvDiscoveredDev;
-    private BluetoothGatt bleGatt;
-    private BluetoothGattCallback bleGattCb;
+
 
     private ArrayList<DeviceInfoModel> discoveredDevList;
     private onClickInterface onDevDiscoveredClickInterface;
 
-    private ArrayList<UUID> uuids;
 
     private static boolean mainActivityIsOpen;
 
@@ -69,119 +64,31 @@ public class MainActivity extends AppCompatActivity {
     private static final int PERMISSION_REQUEST_FINE_LOCATION = 1;
     private static final int PERMISSION_REQUEST_BACKGROUND_LOCATION = 1;
 
-    private final int NOTCONNECTED = 0;
-    private final int SEARCHING = 1;
-    private final int FOUND = 2;
-    private final int CONNECTED = 3;
-    private final int DISCOVERING = 4;
-    private final int COMMUNICATING = 5;
-    private final int DISCONNECTING = 6;
-    private final int INTERROGATE = 7;
-
-    private static int mode = Constants.DEV_MODE_NOT_CONNECTED;
-
-    private static int actualMaxMtuSize;
     private static byte[] lastModeState;
+
+    BleController bleCtrl = new BleController();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         mainActivityIsOpen = true;
-
-
+        Intent intent = new Intent(this, BleController.class);
+        bindService(intent, bleServiceConnection, Context.BIND_AUTO_CREATE);
 
         discoveredDevList = new ArrayList<>();
         onDevDiscoveredClickInterface = new onClickInterface() {
             @Override
             public void setClick(int pos) {
                 DeviceInfoModel selectedBleDevice = discoveredDevList.get(pos);
-                Toast.makeText(MainActivity.this,"Selected " + selectedBleDevice.getDeviceName() + ".",Toast.LENGTH_LONG).show();
-                if(selectedBleDevice.getDeviceName().equals(Constants.bleDeviceName))
-                {
+                Toast.makeText(MainActivity.this, "Selected " + selectedBleDevice.getDeviceName() + ".", Toast.LENGTH_LONG).show();
+                if (selectedBleDevice.getDeviceName().equals(Constants.bleDeviceName)) {
                     // Selected a Ble Device that corresponds to the device we've created in FW
                     // Stop scanning if we are still scanning
-                    if(scanning) {
-                        stopScanning();
+                    if (bleCtrl.isScanning()) {
+                        bleCtrl.stopScanning();
                     }
-                    bleGatt = selectedBleDevice.getDevice().connectGatt(MainActivity.this, false, bleGattCb);
-                }
-            }
-        };
-
-        uuids = new ArrayList<UUID>();
-
-        bleGattCb = new BluetoothGattCallback() {
-            @Override
-            public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
-                super.onConnectionStateChange(gatt, status, newState);
-                if(status != BluetoothGatt.GATT_SUCCESS){
-                    gatt.disconnect();
-                    if(status == Constants.GATT_TIMEOUT){
-                        if(!mainActivityIsOpen)
-                        {
-                            Intent mainIntent = new Intent(getApplicationContext(), MainActivity.class);
-                            startActivity(mainIntent);
-                        }
-                    }
-                    return;
-                }
-                if(newState == BluetoothProfile.STATE_CONNECTED){
-                    bleGatt = gatt;
-                    gatt.discoverServices();
-                }
-                else if (newState == BluetoothProfile.STATE_DISCONNECTED){
-                    bleGatt = null;
-
-                    gatt.close();
-                } else {
-                    // Some other state change that I've decided to not do anything extra
-                }
-            }
-
-            @Override
-            public void onServicesDiscovered(BluetoothGatt gatt, int status) {
-                super.onServicesDiscovered(gatt, status);
-                for(BluetoothGattService service : gatt.getServices()) {
-                    uuids.add(service.getUuid());
-                }
-                gatt.requestMtu(Constants.GATT_MAX_MTU_SIZE);
-                //gatt.disconnect();
-            }
-
-            @Override
-            public void onMtuChanged(BluetoothGatt gatt, int mtu, int status) {
-                super.onMtuChanged(gatt, mtu, status);
-                actualMaxMtuSize = Constants.GATT_MIN_MTU_SIZE;
-                if(status == BluetoothGatt.GATT_SUCCESS)
-                {
-                    actualMaxMtuSize = mtu;
-                }
-                // Let's determine if our main mode characteristic is readable
-
-                BluetoothGattService mainService = gatt.getService(UUID.fromString(Constants.str_ms_uuid));
-                BluetoothGattCharacteristic mainChar = null;
-                if(mainService != null)
-                {
-                    mainChar = mainService.getCharacteristic(UUID.fromString(Constants.str_ms_char_uuid));
-                    if(mainChar != null)
-                    {
-                        gatt.readCharacteristic(mainChar);
-                    }
-                }
-            }
-
-            @Override
-            public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
-                super.onCharacteristicRead(gatt, characteristic, status);
-                if (status == BluetoothGatt.GATT_SUCCESS)
-                {
-                    if(mainActivityIsOpen)
-                    {
-                        // If we are still in the main Activity, transition to corresponding activity
-                        lastModeState = characteristic.getValue();
-                        transitionToActivity();
-                    }
+                    bleCtrl.connectGatt(selectedBleDevice.getDevice());
                 }
             }
         };
@@ -189,10 +96,9 @@ public class MainActivity extends AppCompatActivity {
         setDiscoveredRvAdapter();
 
         ask_for_needed_ble_permissions();
-        
+
         // Initialize class object to the default bluetooth adapter for future use
-        BA = BluetoothAdapter.getDefaultAdapter();
-        bleScanner = BA.getBluetoothLeScanner();
+
         mHandler = new Handler();
 
         // UI Initialization
@@ -207,7 +113,7 @@ public class MainActivity extends AppCompatActivity {
                 // When Connect Button is clicked, we need to populate the device list
 
                 // Get List of Paired Bluetooth Device
-                Set<BluetoothDevice> pairedDevices = BA.getBondedDevices();
+                Set<BluetoothDevice> pairedDevices = bleCtrl.getBondedDevices();
                 List<Object> deviceList = new ArrayList<>();
 
                 // Populate the paired device section
@@ -231,7 +137,7 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 // Start discovery and populate the discovered device section
-                startScanning();
+                bleCtrl.startScanning();
             }
         });
         /*// Button to ON/OFF LED on Arduino Board
@@ -258,10 +164,25 @@ public class MainActivity extends AppCompatActivity {
         });*/
     }
 
+    private ServiceConnection bleServiceConnection = new ServiceConnection() {
+
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            MyBinder binder = (MyBinder) service;
+            bleCtrl = binder.getService();
+            // Register this MainActivity's interface
+            bleCtrl.setInterface(MainActivity.this);
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+
+        }
+    };
+
     private void transitionToActivity() {
-        if (mainActivityIsOpen && lastModeState != null)
-        {
-            switch(lastModeState[Constants.STATE_IDX_MODE]){
+        if (mainActivityIsOpen && lastModeState != null) {
+            switch (lastModeState[Constants.STATE_IDX_MODE]) {
                 case (Constants.DEV_MODE_BASIC_ANIM):
                     Intent act2Intent = new Intent(getApplicationContext(), BasicAnimModeActivity.class);
                     act2Intent.putExtra(Constants.INTENT_EXTRA_MODE, lastModeState[Constants.STATE_IDX_MODE]);
@@ -344,116 +265,56 @@ public class MainActivity extends AppCompatActivity {
     public void onResume() {
         super.onResume();
         mainActivityIsOpen = true;
-        if (!BA.isEnabled()) {
+        if (!bleCtrl.isEnabled()) {
             promptEnableBluetooth();
         }
     }
 
     @Override
-    public void onPause(){
+    public void onPause() {
         super.onPause();
         mainActivityIsOpen = false;
     }
 
     public void promptEnableBluetooth() {
-        if (!BA.isEnabled()) {
+        if (!bleCtrl.isEnabled()) {
             Intent turnOnBle = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(turnOnBle, Constants.REQUEST_ENABLE_BT);
         }
     }
 
-    /* ==== Class functions ==== */
-    /**
-     * Start scanning for BLE Advertisements (& set it up to stop after a set period of time).
+    /*
+     * Interface from the BleController Service. When a timeout Occurs, do the following
      */
-    public void startScanning() {
-        if (mScanCallback == null) {
-            Log.d(TAG, "Starting Scanning");
-
-            // Will stop the scanning after a set time.
-            mHandler.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    stopScanning();
-                }
-            }, SCAN_PERIOD);
-
-            // Kick off a new scan.
-            mScanCallback = new SampleScanCallback();
-            bleScanner.startScan(buildScanFilters(), buildScanSettings(), mScanCallback);
-
-            String toastText = getString(R.string.scan_start_toast) + " "
-                    + TimeUnit.SECONDS.convert(SCAN_PERIOD, TimeUnit.MILLISECONDS) + " "
-                    + getString(R.string.seconds);
-            Toast.makeText(getApplicationContext(), toastText, Toast.LENGTH_LONG).show();
-            scanning = true;
-        } else {
-            Toast.makeText(getApplicationContext(), R.string.already_scanning, Toast.LENGTH_SHORT).show();
+    @Override
+    public void timeoutOccurred() {
+        if (!mainActivityIsOpen) {
+            Intent mainIntent = new Intent(getApplicationContext(), MainActivity.class);
+            startActivity(mainIntent);
         }
     }
 
-    /**
-     * Stop scanning for BLE Advertisements.
-     */
-    public void stopScanning() {
-        Log.d(TAG, "Stopping Scanning");
-
-        // Stop the scan, wipe the callback.
-        bleScanner.stopScan(mScanCallback);
-        mScanCallback = null;
-
-        // Even if no new results, update 'last seen' times.
-        discoveredDevAdapter.notifyDataSetChanged();
-        scanning = false;
+    @Override
+    public void characteristicRead(BluetoothGattCharacteristic characteristic){
+        if(mainActivityIsOpen)
+        {
+            // If we are still in the main Activity, transition to corresponding activity
+            lastModeState = characteristic.getValue();
+            transitionToActivity();
+        }
     }
 
-    /**
-     * Custom ScanCallback object - adds to adapter on success, displays error on failure.
-     */
-    private class SampleScanCallback extends ScanCallback {
-
-        @Override
-        public void onBatchScanResults(List<ScanResult> results) {
-            super.onBatchScanResults(results);
-            for (ScanResult result : results) {
-                discoveredDevAdapter.add(result);
-            }
-            discoveredDevAdapter.notifyDataSetChanged();
-        }
-
-        @Override
-        public void onScanResult(int callbackType, ScanResult result) {
-            super.onScanResult(callbackType, result);
+    @Override
+    public void onBatchScanResults(List<ScanResult> results){
+        for (ScanResult result : results) {
             discoveredDevAdapter.add(result);
-            discoveredDevAdapter.notifyDataSetChanged();
         }
-
-        @Override
-        public void onScanFailed(int errorCode) {
-            super.onScanFailed(errorCode);
-        }
+        discoveredDevAdapter.notifyDataSetChanged();
     }
 
-    /**
-     * Return a List of {@link ScanFilter} objects to filter by Service UUID.
-     */
-    private List<ScanFilter> buildScanFilters() {
-        List<ScanFilter> scanFilters = new ArrayList<>();
-
-        ScanFilter.Builder builder = new ScanFilter.Builder();
-        // Comment out the below line to see all BLE devices around you
-        builder.setServiceUuid(Constants.ms_UUID);
-        scanFilters.add(builder.build());
-
-        return scanFilters;
-    }
-
-    /**
-     * Return a {@link ScanSettings} object set to use low power (to preserve battery life).
-     */
-    private ScanSettings buildScanSettings() {
-        ScanSettings.Builder builder = new ScanSettings.Builder();
-        builder.setScanMode(ScanSettings.SCAN_MODE_LOW_POWER);
-        return builder.build();
+    @Override
+    public void onScanResult(ScanResult result){
+        discoveredDevAdapter.add(result);
+        discoveredDevAdapter.notifyDataSetChanged();
     }
 }

@@ -30,6 +30,10 @@
             </intent-filter>
         </activity>
         <activity android:name=".BasicAnimModeActivity" />
+
+        <service android:name=".BleController"
+            android:enabled="true"
+            android:exported="true"/>
     </application>
 
 </manifest>
