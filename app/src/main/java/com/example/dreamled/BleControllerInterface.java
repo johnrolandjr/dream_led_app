@@ -10,7 +10,7 @@ public interface BleControllerInterface {
     void timeoutOccurred();
 
     // When a characteristic is read successfully, this function will be called
-    void characteristicRead(BluetoothGattCharacteristic characteristic);
+    void onCharacteristicRead(BluetoothGattCharacteristic characteristic);
 
     void onBatchScanResults(List<ScanResult> results);
 

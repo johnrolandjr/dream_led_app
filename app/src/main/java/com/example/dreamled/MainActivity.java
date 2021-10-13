@@ -287,7 +287,7 @@ public class MainActivity extends AppCompatActivity implements BleControllerInte
     }
 
     @Override
-    public void characteristicRead(BluetoothGattCharacteristic characteristic){
+    public void onCharacteristicRead(BluetoothGattCharacteristic characteristic){
         if(mainActivityIsOpen)
         {
             // If we are still in the main Activity, transition to corresponding activity

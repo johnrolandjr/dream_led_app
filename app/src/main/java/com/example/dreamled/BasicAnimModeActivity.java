@@ -293,7 +293,7 @@ public class BasicAnimModeActivity extends AppCompatActivity implements BleContr
     }
 
     @Override
-    public void characteristicRead(BluetoothGattCharacteristic characteristic) {
+    public void onCharacteristicRead(BluetoothGattCharacteristic characteristic) {
         mode_state = characteristic.getValue();
         updateButtonViewStates(mode_state);
     }
