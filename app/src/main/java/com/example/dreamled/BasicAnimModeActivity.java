@@ -120,12 +120,14 @@ public class BasicAnimModeActivity extends AppCompatActivity implements BleContr
         setStaggerBtn(mode_state[Constants.STATE_IDX_LED_DIR], true);
 
         // Set Color buttons accordingly
-        clearAllColorBtnSelections();
         disableAllCustColorBtnSelections();
-        setColorBtn(mode_state[Constants.STATE_IDX_COLOR], true);
+        updateButtonViewStates(mode_state);
     }
 
     private void updateButtonViewStates(byte[] mode_state) {
+        // At the moment, just update the color selection based on the mode_state
+        clearAllColorBtnSelections();
+        setColorBtn(mode_state[Constants.STATE_IDX_COLOR], true);
     }
 
     private void setColorBtn(byte b, boolean val) {
@@ -299,6 +301,13 @@ public class BasicAnimModeActivity extends AppCompatActivity implements BleContr
     }
 
     @Override
+    public void onCharacteristicWrite(BluetoothGattCharacteristic characteristic) {
+        // Get the latest state that we wrote
+        mode_state = characteristic.getValue();
+        updateButtonViewStates(mode_state);
+    }
+
+    @Override
     public void onBatchScanResults(List<ScanResult> results) {
 
     }
@@ -310,16 +319,10 @@ public class BasicAnimModeActivity extends AppCompatActivity implements BleContr
 
     public void colorSelected(View view) {
         byte colorIdx = getColorIdxByView(view);
-        //if(colorIdx != Byte.MIN_VALUE)
-        if(colorIdx == 1)
+        if(colorIdx != Byte.MIN_VALUE)
         {
             mode_state[Constants.STATE_IDX_COLOR] = colorIdx;
             bleCtrl.writeCharacteristic(mode_state);
-        }
-        else
-        {
-            // Testing: perform a characteristic read
-            bleCtrl.readCharacteristic();
         }
     }
 
@@ -327,8 +330,23 @@ public class BasicAnimModeActivity extends AppCompatActivity implements BleContr
         byte idx;
         switch(view.getId())
         {
+            case(R.id.btnColor0):
+                idx = 0;
+                break;
             case(R.id.btnColor1):
                 idx = 1;
+                break;
+            case(R.id.btnColor2):
+                idx = 2;
+                break;
+            case(R.id.btnColor3):
+                idx = 3;
+                break;
+            case(R.id.btnColor4):
+                idx = 4;
+                break;
+            case(R.id.btnColor5):
+                idx = 5;
                 break;
             default:
                 idx = Byte.MIN_VALUE;

@@ -47,7 +47,7 @@ public class BleController extends Service {
     // Registered interface
     private BleControllerInterface bleCtrlIf;
     private ScanCallback mScanCallback;
-    private Handler mHandler;
+    private static Handler mHandler;
     private static BluetoothGatt bleGatt;
 
     boolean scanning;
@@ -234,7 +234,8 @@ public class BleController extends Service {
                 completedCommand();
                 return;
             }
-
+            // Characteristic was sent successfully, perform necessary operations
+            bleCtrlIf.onCharacteristicWrite(characteristic);
             // Remove this ble command from the queue
             completedCommand();
         }
@@ -464,8 +465,12 @@ public class BleController extends Service {
         boolean result = bleCommandQueue.add(new Runnable() {
             @Override
             public void run() {
-                mainChar.setValue(mode_state);
-                mainChar.setWriteType(PROPERTY_WRITE);
+                byte[] newMode = new byte[4];
+                for(int i=0; i<4; i++) {
+                    newMode[i] = mode_state[i];
+                }
+                mainChar.setValue(newMode);
+                mainChar.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE);
                 if(!bleGatt.writeCharacteristic(mainChar)) {
                     Log.e(TAG, "ERROR: Failed writing the characteristic.");
                     completedCommand();

@@ -297,6 +297,11 @@ public class MainActivity extends AppCompatActivity implements BleControllerInte
     }
 
     @Override
+    public void onCharacteristicWrite(BluetoothGattCharacteristic characteristic) {
+        // Don't do anything, we shouldn't be writing to the state in this activity
+    }
+
+    @Override
     public void onBatchScanResults(List<ScanResult> results){
         for (ScanResult result : results) {
             discoveredDevAdapter.add(result);
