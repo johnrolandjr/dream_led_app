@@ -316,7 +316,8 @@
         <Button
             android:id="@+id/btnUpdateCustColor0"
             android:layout_width="50dp"
-            android:layout_height="fill_parent"/>
+            android:layout_height="fill_parent"
+            android:onClick="updateCustomColor"/>
         <Button
             android:id="@+id/btnUpdateCustColor1"
             android:layout_width="50dp"

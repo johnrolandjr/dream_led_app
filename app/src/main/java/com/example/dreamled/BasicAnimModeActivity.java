@@ -17,6 +17,8 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import java.util.List;
 
+import yuku.ambilwarna.AmbilWarnaDialog;
+
 public class BasicAnimModeActivity extends AppCompatActivity implements BleControllerInterface{
 
     BleController bleCtrl = new BleController();
@@ -347,6 +349,58 @@ public class BasicAnimModeActivity extends AppCompatActivity implements BleContr
                 break;
             case(R.id.btnColor5):
                 idx = 5;
+                break;
+            default:
+                idx = Byte.MIN_VALUE;
+                break;
+        }
+        return idx;
+    }
+
+    public void updateCustomColor(View view) {
+        byte colorIdx = getCustColorIdxByView(view);
+        if(colorIdx != Byte.MIN_VALUE)
+        {
+            // We have the custom ColorIdx and the view
+            // Time to create the dialog to prompt the user to pick a new color
+            AmbilWarnaDialog customColorDialog = new AmbilWarnaDialog(this, 0x000000, new AmbilWarnaDialog.OnAmbilWarnaListener() {
+
+                @Override
+                public void onCancel(AmbilWarnaDialog dialog) {
+                    // Don't do anything
+                }
+
+                @Override
+                public void onOk(AmbilWarnaDialog dialog, int color) {
+                    // Update the corresponding button's color
+                    //ToggleButton customColorSelected = getCustomColorTbByColorIdx(colorIdx);
+                    //customColorSelected.setBackground();
+                    color+=1;
+                    // Send a command to update the custom color in the device
+                }
+            });
+            customColorDialog.show();
+        }
+    }
+
+    private byte getCustColorIdxByView(View view) {
+        byte idx;
+        switch(view.getId())
+        {
+            case(R.id.btnUpdateCustColor0):
+                idx = Constants.NUM_STANDARD_COLORS + 0;
+                break;
+            case(R.id.btnUpdateCustColor1):
+                idx = Constants.NUM_STANDARD_COLORS + 1;
+                break;
+            case(R.id.btnUpdateCustColor2):
+                idx = Constants.NUM_STANDARD_COLORS + 2;
+                break;
+            case(R.id.btnUpdateCustColor3):
+                idx = Constants.NUM_STANDARD_COLORS + 3;
+                break;
+            case(R.id.btnUpdateCustColor4):
+                idx = Constants.NUM_STANDARD_COLORS + 4;
                 break;
             default:
                 idx = Byte.MIN_VALUE;
