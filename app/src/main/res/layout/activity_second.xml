@@ -199,48 +199,66 @@
         android:paddingBottom="10dp"
         android:gravity="center_horizontal"
         app:layout_constraintTop_toBottomOf="@+id/colorTitle">
+
         <ToggleButton
             android:id="@+id/btnColor0"
             android:layout_width="50dp"
             android:layout_height="fill_parent"
+            android:backgroundTint="#80FF9800"
+            android:backgroundTintMode="src_over"
             android:onClick="colorSelected"
-            android:textOn=""
-            android:textOff=""/>
+            android:textOff=""
+            android:textOn="" />
+
         <ToggleButton
             android:id="@+id/btnColor1"
             android:layout_width="50dp"
             android:layout_height="fill_parent"
+            android:backgroundTint="#80E91E63"
+            android:backgroundTintMode="src_over"
             android:onClick="colorSelected"
-            android:textOn=""
-            android:textOff=""/>
+            android:textOff=""
+            android:textOn="" />
+
         <ToggleButton
             android:id="@+id/btnColor2"
             android:layout_width="50dp"
             android:layout_height="fill_parent"
+            android:backgroundTint="#80673AB7"
+            android:backgroundTintMode="src_over"
             android:onClick="colorSelected"
-            android:textOn=""
-            android:textOff=""/>
+            android:textOff=""
+            android:textOn="" />
+
         <ToggleButton
             android:id="@+id/btnColor3"
             android:layout_width="50dp"
             android:layout_height="fill_parent"
+            android:backgroundTint="#8003A9F4"
+            android:backgroundTintMode="src_over"
             android:onClick="colorSelected"
-            android:textOn=""
-            android:textOff=""/>
+            android:textOff=""
+            android:textOn="" />
+
         <ToggleButton
             android:id="@+id/btnColor4"
             android:layout_width="50dp"
             android:layout_height="fill_parent"
+            android:backgroundTint="#80009688"
+            android:backgroundTintMode="src_over"
             android:onClick="colorSelected"
-            android:textOn=""
-            android:textOff=""/>
+            android:textOff=""
+            android:textOn="" />
+
         <ToggleButton
             android:id="@+id/btnColor5"
             android:layout_width="50dp"
             android:layout_height="fill_parent"
+            android:backgroundTint="#804CAF50"
+            android:backgroundTintMode="src_over"
             android:onClick="colorSelected"
-            android:textOn=""
-            android:textOff=""/>
+            android:textOff=""
+            android:textOn="" />
     </LinearLayout>
 
     <!-- Custom Color -->
