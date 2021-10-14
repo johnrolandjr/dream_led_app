@@ -297,7 +297,7 @@
             android:layout_marginLeft="5dp"
             android:layout_marginRight="5dp"
             android:clickable="true"
-            android:focusable="true" />
+            android:focusable="true"/>
         <TextView
             android:id="@+id/btnCustColor1"
             android:layout_width="50dp"
@@ -305,7 +305,7 @@
             android:layout_marginLeft="5dp"
             android:layout_marginRight="5dp"
             android:clickable="true"
-            android:focusable="true" />
+            android:focusable="true"/>
         <TextView
             android:id="@+id/btnCustColor2"
             android:layout_width="50dp"
@@ -313,7 +313,7 @@
             android:layout_marginLeft="5dp"
             android:layout_marginRight="5dp"
             android:clickable="true"
-            android:focusable="true" />
+            android:focusable="true"/>
         <TextView
             android:id="@+id/btnCustColor3"
             android:layout_width="50dp"
@@ -321,7 +321,7 @@
             android:layout_marginLeft="5dp"
             android:layout_marginRight="5dp"
             android:clickable="true"
-            android:focusable="true" />
+            android:focusable="true"/>
         <TextView
             android:id="@+id/btnCustColor4"
             android:layout_width="50dp"
@@ -329,14 +329,15 @@
             android:layout_marginLeft="5dp"
             android:layout_marginRight="5dp"
             android:clickable="true"
-            android:focusable="true" />
+            android:focusable="true"/>
     </LinearLayout>
 
     <LinearLayout
         android:id="@+id/llCustColorUpdate"
         android:layout_width="match_parent"
-        android:layout_height="35dp"
+        android:layout_height="40dp"
         android:layout_below="@+id/llColor"
+        android:layout_marginTop="5dp"
         android:gravity="center_horizontal"
         android:orientation="horizontal"
         android:paddingTop="0dp"

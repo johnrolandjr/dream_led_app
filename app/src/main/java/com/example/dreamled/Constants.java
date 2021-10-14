@@ -14,6 +14,7 @@ public class Constants {
      */
     public static final String str_ms_uuid      = "00002423-1212-efde-1523-785feabcd123";
     public static final String str_ms_char_uuid = "00002424-1212-efde-1523-785feabcd123";
+    public static final String str_cmd_char_uuid = "000015A3-1212-efde-1523-785feabcd123";
 
     public static final ParcelUuid ms_UUID = ParcelUuid
             .fromString(Constants.str_ms_uuid);
@@ -32,6 +33,7 @@ public class Constants {
     public static final String INTENT_EXTRA_COLOR = "state_color";
 
     public static final int NUM_STANDARD_COLORS = 6;
+    public static final int NUM_CUSTOM_COLORS = 5;
 
     public static final int STATE_IDX_MODE    = 0;
     public static final int STATE_IDX_LED_DIR = 1;

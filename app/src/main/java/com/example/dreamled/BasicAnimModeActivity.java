@@ -28,36 +28,37 @@ public class BasicAnimModeActivity extends AppCompatActivity implements BleContr
     private static byte[] mode_state;
 
     //Buttons
-    private static Button btnDisconnectAndKill;
-    private static ToggleButton btnBasicAnimMode;
-    private static ToggleButton btnAudioBasedMode;
-    private static ToggleButton btnDirUp;
-    private static ToggleButton btnDirDown;
-    private static ToggleButton btnDirLeft;
-    private static ToggleButton btnDirRight;
-    private static ToggleButton btnDirYCenterOut;
-    private static ToggleButton btnDirYOutCenter;
-    private static ToggleButton btnStagNone;
-    private static ToggleButton btnStagAsc;
-    private static ToggleButton btnStagDesc;
-    private static ToggleButton btnStagMnt;
-    private static ToggleButton btnStagVal;
-    private static ToggleButton btnColor0;
-    private static ToggleButton btnColor1;
-    private static ToggleButton btnColor2;
-    private static ToggleButton btnColor3;
-    private static ToggleButton btnColor4;
-    private static ToggleButton btnColor5;
-    private static TextView btnCustColor0;
-    private static TextView btnCustColor1;
-    private static TextView btnCustColor2;
-    private static TextView btnCustColor3;
-    private static TextView btnCustColor4;
-    private static Button btnUpdateCustColor0;
-    private static Button btnUpdateCustColor1;
-    private static Button btnUpdateCustColor2;
-    private static Button btnUpdateCustColor3;
-    private static Button btnUpdateCustColor4;
+    private Button btnDisconnectAndKill;
+    private ToggleButton btnBasicAnimMode;
+    private ToggleButton btnAudioBasedMode;
+    private ToggleButton btnDirUp;
+    private ToggleButton btnDirDown;
+    private ToggleButton btnDirLeft;
+    private ToggleButton btnDirRight;
+    private ToggleButton btnDirYCenterOut;
+    private ToggleButton btnDirYOutCenter;
+    private ToggleButton btnStagNone;
+    private ToggleButton btnStagAsc;
+    private ToggleButton btnStagDesc;
+    private ToggleButton btnStagMnt;
+    private ToggleButton btnStagVal;
+    private ToggleButton btnColor0;
+    private ToggleButton btnColor1;
+    private ToggleButton btnColor2;
+    private ToggleButton btnColor3;
+    private ToggleButton btnColor4;
+    private ToggleButton btnColor5;
+    private TextView btnCustColor0;
+    private TextView btnCustColor1;
+    private TextView btnCustColor2;
+    private TextView btnCustColor3;
+    private TextView btnCustColor4;
+    private Button btnUpdateCustColor0;
+    private Button btnUpdateCustColor1;
+    private Button btnUpdateCustColor2;
+    private Button btnUpdateCustColor3;
+    private Button btnUpdateCustColor4;
+    private View.OnClickListener customColorSelectedOnClickFunc;
 
     private ServiceConnection bleServiceConnection = new ServiceConnection() {
         @Override
@@ -92,6 +93,14 @@ public class BasicAnimModeActivity extends AppCompatActivity implements BleContr
         initButtonViews();
         initButtonViewStates();
         updateButtonViewStates(mode_state);
+
+        customColorSelectedOnClickFunc = new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // When the custom color is selected, update the mode to the new color and inform the ble device
+                customColorSelected(v);
+            }
+        };
         /*
         View btnBack = findViewById(R.id.btnBack);
         btnBack.setOnClickListener(new View.OnClickListener() {
@@ -373,12 +382,37 @@ public class BasicAnimModeActivity extends AppCompatActivity implements BleContr
                     TextView customColorTv = getCustomColorViewByIdx(colorIdx);
                     if(customColorTv != null)
                     {
-                        customColorTv.setBackgroundColor(color);
+                        if(color != Color.BLACK) {
+                            customColorTv.setBackgroundColor(color);
+                            // Color updated, we need to tell the ble device of this change
+                            byte[] updateCustomColorCmd = createCustomColorCmd(colorIdx, color);
+                            bleCtrl.writeCmdCharacteristic(updateCustomColorCmd);
+                            // We also need to make the custom color text view clickable
+                            customColorTv.setOnClickListener(customColorSelectedOnClickFunc);
+                        }
+                        else{
+                            // It's black (not a valid color in this situation
+                            // Set it to transparent
+                            customColorTv.setBackgroundColor(Color.TRANSPARENT);
+
+                            // Next we want to make it not clickable
+                            customColorTv.setOnClickListener(null);
+                        }
                     }
                 }
             });
             customColorDialog.show();
         }
+    }
+
+    private byte[] createCustomColorCmd(byte colorIdx, int color) {
+        byte[] cmd = new byte[5];
+        cmd[0] = 1; // Command Type is Upddate Custom Color
+        cmd[1] = colorIdx; // Color Idx that we are updating
+        cmd[2] = (byte)Color.red(color);
+        cmd[3] = (byte)Color.green(color);
+        cmd[4] = (byte)Color.blue(color);
+        return cmd;
     }
 
     private TextView getCustomColorViewByIdx(byte colorIdx) {
@@ -430,5 +464,43 @@ public class BasicAnimModeActivity extends AppCompatActivity implements BleContr
                 break;
         }
         return idx;
+    }
+
+    private byte getCustColorIdxByTextView(View view) {
+        byte idx;
+        switch(view.getId())
+        {
+            case(R.id.btnCustColor0):
+                idx = Constants.NUM_STANDARD_COLORS + 0;
+                break;
+            case(R.id.btnCustColor1):
+                idx = Constants.NUM_STANDARD_COLORS + 1;
+                break;
+            case(R.id.btnCustColor2):
+                idx = Constants.NUM_STANDARD_COLORS + 2;
+                break;
+            case(R.id.btnCustColor3):
+                idx = Constants.NUM_STANDARD_COLORS + 3;
+                break;
+            case(R.id.btnCustColor4):
+                idx = Constants.NUM_STANDARD_COLORS + 4;
+                break;
+            default:
+                idx = Byte.MIN_VALUE;
+                break;
+        }
+        return idx;
+    }
+
+    public void customColorSelected(View view) {
+        byte colorIdx = getCustColorIdxByTextView(view);
+        if(colorIdxIsInRange(colorIdx)) {
+            mode_state[Constants.STATE_IDX_COLOR] = colorIdx;
+            bleCtrl.writeCharacteristic(mode_state);
+        }
+    }
+
+    private boolean colorIdxIsInRange(byte colorIdx) {
+        return ((colorIdx > 0) && (colorIdx <= Constants.NUM_STANDARD_COLORS + Constants.NUM_CUSTOM_COLORS));
     }
 }

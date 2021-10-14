@@ -53,6 +53,7 @@ public class BleController extends Service {
     boolean scanning;
     private ArrayList<UUID> uuids;
     BluetoothGattCharacteristic mainChar;
+    BluetoothGattCharacteristic cmdChar;
     private BluetoothAdapter BA;
     private BluetoothLeScanner bleScanner;
     private static int actualMaxMtuSize;
@@ -476,6 +477,55 @@ public class BleController extends Service {
                     completedCommand();
                 }else{
                     Log.d(TAG, "Writing the main characteristic.");
+                    nrTries++;
+                }
+            }
+        });
+
+        if(result) {
+            nextCommand();
+        } else {
+            Log.e(TAG, "ERROR: Could not queue write characteristic command.");
+        }
+        return result;
+    }
+
+    public boolean writeCmdCharacteristic(byte[] cmd) {
+        if(bleGatt == null)
+        {
+            Log.e(TAG, "ERROR: Gatt is null, ignoring read request.");
+            return false;
+        }
+        BluetoothGattService mainService = bleGatt.getService(UUID.fromString(Constants.str_ms_uuid));
+        cmdChar = null;
+        if(mainService == null){
+            Log.e(TAG, "ERROR: Could not find main service.");
+            return false;
+        }
+
+        cmdChar = mainService.getCharacteristic(UUID.fromString(Constants.str_cmd_char_uuid));
+        if(cmdChar == null){
+            Log.e(TAG, "ERROR: Could not find characteristic.");
+            return false;
+        }
+
+        int properties = cmdChar.getProperties();
+        if((properties & PROPERTY_WRITE_NO_RESPONSE) == 0){
+            Log.e(TAG, "ERROR: Cmd Characteristic is not writable (no response wrtie type).");
+            return false;
+        }
+
+        // Pass all the checks, queue up the write and return true
+        boolean result = bleCommandQueue.add(new Runnable() {
+            @Override
+            public void run() {
+                cmdChar.setValue(cmd);
+                cmdChar.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE);
+                if(!bleGatt.writeCharacteristic(cmdChar)) {
+                    Log.e(TAG, "ERROR: Failed writing the characteristic.");
+                    completedCommand();
+                }else{
+                    Log.d(TAG, "Writing the cmd characteristic.");
                     nrTries++;
                 }
             }
