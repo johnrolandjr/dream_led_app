@@ -6,10 +6,12 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.view.View;
 import android.widget.Button;
+import android.widget.TextView;
 import android.widget.ToggleButton;
 
 import androidx.annotation.Nullable;
@@ -46,11 +48,11 @@ public class BasicAnimModeActivity extends AppCompatActivity implements BleContr
     private static ToggleButton btnColor3;
     private static ToggleButton btnColor4;
     private static ToggleButton btnColor5;
-    private static ToggleButton btnCustColor0;
-    private static ToggleButton btnCustColor1;
-    private static ToggleButton btnCustColor2;
-    private static ToggleButton btnCustColor3;
-    private static ToggleButton btnCustColor4;
+    private static TextView btnCustColor0;
+    private static TextView btnCustColor1;
+    private static TextView btnCustColor2;
+    private static TextView btnCustColor3;
+    private static TextView btnCustColor4;
     private static Button btnUpdateCustColor0;
     private static Button btnUpdateCustColor1;
     private static Button btnUpdateCustColor2;
@@ -155,29 +157,29 @@ public class BasicAnimModeActivity extends AppCompatActivity implements BleContr
                 break;
             /* Indices after 5 are custom */
             case(Constants.NUM_STANDARD_COLORS):
-                btnCustColor0.setChecked(val);
+                //btnCustColor0.setChecked(val);
                 break;
             case(Constants.NUM_STANDARD_COLORS + 1):
-                btnCustColor1.setChecked(val);
+                //btnCustColor1.setChecked(val);
                 break;
             case(Constants.NUM_STANDARD_COLORS + 2):
-                btnCustColor2.setChecked(val);
+                //btnCustColor2.setChecked(val);
                 break;
             case(Constants.NUM_STANDARD_COLORS + 3):
-                btnCustColor3.setChecked(val);
+                //btnCustColor3.setChecked(val);
                 break;
             case(Constants.NUM_STANDARD_COLORS + 4):
-                btnCustColor4.setChecked(val);
+                //btnCustColor4.setChecked(val);
                 break;
         }
     }
 
     private void disableAllCustColorBtnSelections() {
-        btnCustColor0.setEnabled(false);
-        btnCustColor1.setEnabled(false);
-        btnCustColor2.setEnabled(false);
-        btnCustColor3.setEnabled(false);
-        btnCustColor4.setEnabled(false);
+        btnCustColor0.setBackgroundColor(Color.TRANSPARENT);
+        btnCustColor1.setBackgroundColor(Color.TRANSPARENT);
+        btnCustColor2.setBackgroundColor(Color.TRANSPARENT);
+        btnCustColor3.setBackgroundColor(Color.TRANSPARENT);
+        btnCustColor4.setBackgroundColor(Color.TRANSPARENT);
     }
 
     private void clearAllColorBtnSelections() {
@@ -187,11 +189,6 @@ public class BasicAnimModeActivity extends AppCompatActivity implements BleContr
         btnColor3.setChecked(false);
         btnColor4.setChecked(false);
         btnColor5.setChecked(false);
-        btnCustColor0.setChecked(false);
-        btnCustColor1.setChecked(false);
-        btnCustColor2.setChecked(false);
-        btnCustColor3.setChecked(false);
-        btnCustColor4.setChecked(false);
     }
 
     private void setStaggerBtn(byte b, boolean val) {
@@ -277,11 +274,11 @@ public class BasicAnimModeActivity extends AppCompatActivity implements BleContr
         btnColor3 = (ToggleButton)findViewById(R.id.btnColor3);
         btnColor4 = (ToggleButton)findViewById(R.id.btnColor4);
         btnColor5 = (ToggleButton)findViewById(R.id.btnColor5);
-        btnCustColor0 = (ToggleButton)findViewById(R.id.btnCustColor0);
-        btnCustColor1 = (ToggleButton)findViewById(R.id.btnCustColor1);
-        btnCustColor2 = (ToggleButton)findViewById(R.id.btnCustColor2);
-        btnCustColor3 = (ToggleButton)findViewById(R.id.btnCustColor3);
-        btnCustColor4 = (ToggleButton)findViewById(R.id.btnCustColor4);
+        btnCustColor0 = (TextView) findViewById(R.id.btnCustColor0);
+        btnCustColor1 = (TextView) findViewById(R.id.btnCustColor1);
+        btnCustColor2 = (TextView) findViewById(R.id.btnCustColor2);
+        btnCustColor3 = (TextView) findViewById(R.id.btnCustColor3);
+        btnCustColor4 = (TextView) findViewById(R.id.btnCustColor4);
         btnUpdateCustColor0 = (Button)findViewById(R.id.btnUpdateCustColor0);
         btnUpdateCustColor1 = (Button)findViewById(R.id.btnUpdateCustColor1);
         btnUpdateCustColor2 = (Button)findViewById(R.id.btnUpdateCustColor2);
@@ -372,15 +369,41 @@ public class BasicAnimModeActivity extends AppCompatActivity implements BleContr
 
                 @Override
                 public void onOk(AmbilWarnaDialog dialog, int color) {
-                    // Update the corresponding button's color
-                    //ToggleButton customColorSelected = getCustomColorTbByColorIdx(colorIdx);
-                    //customColorSelected.setBackground();
-                    color+=1;
-                    // Send a command to update the custom color in the device
+                    // Update the corresponding custom color textview (to show the color selected)
+                    TextView customColorTv = getCustomColorViewByIdx(colorIdx);
+                    if(customColorTv != null)
+                    {
+                        customColorTv.setBackgroundColor(color);
+                    }
                 }
             });
             customColorDialog.show();
         }
+    }
+
+    private TextView getCustomColorViewByIdx(byte colorIdx) {
+        TextView customColorTv;
+        switch(colorIdx)
+        {
+            case(Constants.NUM_STANDARD_COLORS):
+                customColorTv = btnCustColor0;
+                break;
+            case(Constants.NUM_STANDARD_COLORS + 1):
+                customColorTv = btnCustColor1;
+                break;
+            case(Constants.NUM_STANDARD_COLORS + 2):
+                customColorTv = btnCustColor2;
+                break;
+            case(Constants.NUM_STANDARD_COLORS + 3):
+                customColorTv = btnCustColor3;
+                break;
+            case(Constants.NUM_STANDARD_COLORS + 4):
+                customColorTv = btnCustColor4;
+                break;
+            default:
+                customColorTv = null;
+        }
+        return customColorTv;
     }
 
     private byte getCustColorIdxByView(View view) {
