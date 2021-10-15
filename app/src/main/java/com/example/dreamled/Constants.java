@@ -41,6 +41,10 @@ public class Constants {
     public static final int STATE_IDX_COLOR   = 3;
     public static final int STATE_LEN         = 4;
 
+
+    public static final byte CMD_TYPE_STOP_ADV = 2;
+    public static final byte CMD_TYPE_UPDATE_DIM = 3;
+
     public static String bleDeviceName = "Dream Led";
 
     // BLE Device Modes

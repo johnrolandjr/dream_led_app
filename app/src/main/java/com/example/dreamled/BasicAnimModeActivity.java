@@ -18,6 +18,7 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import java.util.List;
+import java.util.UUID;
 
 import yuku.ambilwarna.AmbilWarnaDialog;
 
@@ -28,7 +29,7 @@ public class BasicAnimModeActivity extends AppCompatActivity implements BleContr
     private static byte[] mode_state;
 
     //Buttons
-    private Button btnDisconnectAndKill;
+    private Button btnDim;
     private ToggleButton btnBasicAnimMode;
     private ToggleButton btnAudioBasedMode;
     private ToggleButton btnDirUp;
@@ -60,6 +61,8 @@ public class BasicAnimModeActivity extends AppCompatActivity implements BleContr
     private Button btnUpdateCustColor4;
     private View.OnClickListener customColorSelectedOnClickFunc;
 
+    private boolean bDim;
+
     private ServiceConnection bleServiceConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
@@ -90,8 +93,10 @@ public class BasicAnimModeActivity extends AppCompatActivity implements BleContr
         mode_state[Constants.STATE_IDX_STAGGER] = intent.getByte(Constants.INTENT_EXTRA_STAGGER);
         mode_state[Constants.STATE_IDX_COLOR] = intent.getByte(Constants.INTENT_EXTRA_COLOR);
 
+        bDim = false;
         initButtonViews();
         initButtonViewStates();
+        updateDimText();
         updateButtonViewStates(mode_state);
 
         customColorSelectedOnClickFunc = new View.OnClickListener() {
@@ -110,6 +115,17 @@ public class BasicAnimModeActivity extends AppCompatActivity implements BleContr
             }
         });
         */
+    }
+
+    private void updateDimText() {
+        if(bDim)
+        {
+            btnDim.setText("Dim On");
+        }
+        else
+        {
+            btnDim.setText("Dim Off");
+        }
     }
 
     @Override
@@ -263,7 +279,7 @@ public class BasicAnimModeActivity extends AppCompatActivity implements BleContr
     }
 
     private void initButtonViews() {
-        btnDisconnectAndKill = (Button)findViewById(R.id.btnDisconnectAndKill);
+        btnDim = (Button)findViewById(R.id.btnDim);
         btnBasicAnimMode = (ToggleButton)findViewById(R.id.btnBasicAnimMode);
         btnAudioBasedMode = (ToggleButton)findViewById(R.id.btnAudioBasedMode);
         btnDirUp = (ToggleButton)findViewById(R.id.btnDirUp);
@@ -310,9 +326,16 @@ public class BasicAnimModeActivity extends AppCompatActivity implements BleContr
 
     @Override
     public void onCharacteristicWrite(BluetoothGattCharacteristic characteristic) {
-        // Get the latest state that we wrote
-        mode_state = characteristic.getValue();
-        updateButtonViewStates(mode_state);
+        // Check to see if this write was to the mode characteristic or the command characteristic
+        if(characteristic.getUuid() == UUID.fromString(Constants.str_ms_char_uuid)) {
+            // Get the latest state that we wrote
+            mode_state = characteristic.getValue();
+            updateButtonViewStates(mode_state);
+        }
+        if(characteristic.getUuid() == UUID.fromString(Constants.str_cmd_char_uuid)){
+            // We sent a command to the device. Act accordingly
+
+        }
     }
 
     @Override
@@ -502,5 +525,42 @@ public class BasicAnimModeActivity extends AppCompatActivity implements BleContr
 
     private boolean colorIdxIsInRange(byte colorIdx) {
         return ((colorIdx > 0) && (colorIdx <= Constants.NUM_STANDARD_COLORS + Constants.NUM_CUSTOM_COLORS));
+    }
+
+    public void stopAdvBtnClick(View view) {
+        // When this function is called, initiate a command to the ble device to disconnect and stop advertising
+        // The app should handle the transition on it's on
+        byte[] stopAdvCmd = createStopAdvCmd();
+        bleCtrl.writeCmdCharacteristic(stopAdvCmd);
+
+        // We should close the app but, for now, let's just transition to main activity
+        Intent mainIntent = new Intent(getApplicationContext(), MainActivity.class);
+        startActivity(mainIntent);
+    }
+
+    private byte[] createStopAdvCmd() {
+        byte[] cmd = new byte[1];
+        cmd[0] = Constants.CMD_TYPE_STOP_ADV; // Command Type is Upddate Custom Color
+        return cmd;
+    }
+
+    public void toggleDimParam(View view) {
+        // Toggle our boolean
+        bDim = !bDim;
+        // Update screen accordingly
+        updateDimText();
+        // Send Dim Command
+        byte[] updateDimCmd = createUpdateDimCmd();
+        bleCtrl.writeCmdCharacteristic(updateDimCmd);
+    }
+
+    private byte[] createUpdateDimCmd() {
+        byte[] cmd = new byte[2];
+        cmd[0] = Constants.CMD_TYPE_UPDATE_DIM; // Command Type is Upddate Custom Color
+        if(bDim)
+            cmd[1] = 1; // Send a non zero value to enable Dimming
+        else
+            cmd[1] = 0; // Send zero to disable Dimming
+        return cmd;
     }
 }
