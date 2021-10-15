@@ -61,7 +61,7 @@ public class BasicAnimModeActivity extends AppCompatActivity implements BleContr
     private Button btnUpdateCustColor4;
     private View.OnClickListener customColorSelectedOnClickFunc;
 
-    private boolean bDim;
+    private byte dimValue;
 
     private ServiceConnection bleServiceConnection = new ServiceConnection() {
         @Override
@@ -93,7 +93,7 @@ public class BasicAnimModeActivity extends AppCompatActivity implements BleContr
         mode_state[Constants.STATE_IDX_STAGGER] = intent.getByte(Constants.INTENT_EXTRA_STAGGER);
         mode_state[Constants.STATE_IDX_COLOR] = intent.getByte(Constants.INTENT_EXTRA_COLOR);
 
-        bDim = false;
+        dimValue = 0;
         initButtonViews();
         initButtonViewStates();
         updateDimText();
@@ -118,13 +118,17 @@ public class BasicAnimModeActivity extends AppCompatActivity implements BleContr
     }
 
     private void updateDimText() {
-        if(bDim)
+        switch(dimValue)
         {
-            btnDim.setText("Dim On");
-        }
-        else
-        {
-            btnDim.setText("Dim Off");
+            case(0):
+                btnDim.setText("Dim Off");
+                break;
+            case(1):
+                btnDim.setText("Dim 1");
+                break;
+            case(2):
+                btnDim.setText("Dim 2");
+                break;
         }
     }
 
@@ -546,7 +550,11 @@ public class BasicAnimModeActivity extends AppCompatActivity implements BleContr
 
     public void toggleDimParam(View view) {
         // Toggle our boolean
-        bDim = !bDim;
+        dimValue++;
+        if(dimValue >= 3)
+        {
+            dimValue = 0;
+        }
         // Update screen accordingly
         updateDimText();
         // Send Dim Command
@@ -556,11 +564,8 @@ public class BasicAnimModeActivity extends AppCompatActivity implements BleContr
 
     private byte[] createUpdateDimCmd() {
         byte[] cmd = new byte[2];
-        cmd[0] = Constants.CMD_TYPE_UPDATE_DIM; // Command Type is Upddate Custom Color
-        if(bDim)
-            cmd[1] = 1; // Send a non zero value to enable Dimming
-        else
-            cmd[1] = 0; // Send zero to disable Dimming
+        cmd[0] = Constants.CMD_TYPE_UPDATE_DIM; // Command Type is Update Custom Color
+        cmd[1] = dimValue;
         return cmd;
     }
 }
