@@ -86,7 +86,11 @@ public class MainActivity extends AppCompatActivity implements BleControllerInte
                     if (bleCtrl.isScanning()) {
                         bleCtrl.stopScanning();
                     }
-                    bleCtrl.connectGatt(selectedBleDevice.getDevice());
+                    // Update target ble device that we will be interacting from now on
+                    bleCtrl.setDevice(selectedBleDevice.getDevice());
+                    // Transition to basic animation mode activity with this device info
+                    transitionToActivity();
+                    //bleCtrl.connectGatt(selectedBleDevice.getDevice());
                 }
             }
         };
@@ -173,21 +177,8 @@ public class MainActivity extends AppCompatActivity implements BleControllerInte
     };
 
     private void transitionToActivity() {
-        if (mainActivityIsOpen && lastModeState != null) {
-            switch (lastModeState[Constants.STATE_IDX_MODE]) {
-                case (Constants.DEV_MODE_BASIC_ANIM):
-                    Intent act2Intent = new Intent(getApplicationContext(), BasicAnimModeActivity.class);
-                    act2Intent.putExtra(Constants.INTENT_EXTRA_MODE, lastModeState[Constants.STATE_IDX_MODE]);
-                    act2Intent.putExtra(Constants.INTENT_EXTRA_DIR, lastModeState[Constants.STATE_IDX_LED_DIR]);
-                    act2Intent.putExtra(Constants.INTENT_EXTRA_STAGGER, lastModeState[Constants.STATE_IDX_STAGGER]);
-                    act2Intent.putExtra(Constants.INTENT_EXTRA_COLOR, lastModeState[Constants.STATE_IDX_COLOR]);
-                    startActivity(act2Intent);
-                    break;
-                case (Constants.DEV_MODE_AUDIO_BASED):
-                    // Implement later
-                    break;
-            }
-        }
+        Intent act2Intent = new Intent(getApplicationContext(), BasicAnimModeActivity.class);
+        startActivity(act2Intent);
     }
 
     private void setDiscoveredRvAdapter() {
@@ -272,17 +263,6 @@ public class MainActivity extends AppCompatActivity implements BleControllerInte
         if (!bleCtrl.isEnabled()) {
             Intent turnOnBle = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(turnOnBle, Constants.REQUEST_ENABLE_BT);
-        }
-    }
-
-    /*
-     * Interface from the BleController Service. When a timeout Occurs, do the following
-     */
-    @Override
-    public void timeoutOccurred() {
-        if (!mainActivityIsOpen) {
-            Intent mainIntent = new Intent(getApplicationContext(), MainActivity.class);
-            startActivity(mainIntent);
         }
     }
 

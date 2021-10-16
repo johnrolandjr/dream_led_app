@@ -26,6 +26,7 @@ public class BasicAnimModeActivity extends AppCompatActivity implements BleContr
 
     BleController bleCtrl = new BleController();
 
+    private static String strBleDev;
     private static byte[] mode_state;
 
     //Buttons
@@ -70,6 +71,8 @@ public class BasicAnimModeActivity extends AppCompatActivity implements BleContr
             bleCtrl = binder.getService();
             // Register this MainActivity's interface
             bleCtrl.setInterface(BasicAnimModeActivity.this);
+            bleCtrl.readCharacteristic();
+            bleCtrl.setContext(getApplicationContext());
         }
 
         @Override
@@ -86,18 +89,24 @@ public class BasicAnimModeActivity extends AppCompatActivity implements BleContr
         Intent bindIntent = new Intent(this, BleController.class);
         bindService(bindIntent, bleServiceConnection, Context.BIND_AUTO_CREATE);
 
-        Bundle intent = getIntent().getExtras();
         mode_state = new byte[Constants.STATE_LEN];
+        /*
         mode_state[Constants.STATE_IDX_MODE] = intent.getByte(Constants.INTENT_EXTRA_MODE);
         mode_state[Constants.STATE_IDX_LED_DIR] = intent.getByte(Constants.INTENT_EXTRA_DIR);
         mode_state[Constants.STATE_IDX_STAGGER] = intent.getByte(Constants.INTENT_EXTRA_STAGGER);
         mode_state[Constants.STATE_IDX_COLOR] = intent.getByte(Constants.INTENT_EXTRA_COLOR);
+         */
 
         dimValue = 0;
         initButtonViews();
         initButtonViewStates();
         updateDimText();
-        updateButtonViewStates(mode_state);
+
+        byte[] initState = new byte[Constants.STATE_LEN];
+        for(int i=0; i< Constants.STATE_LEN; i++) {
+            initState[i] = 0;
+        }
+        updateButtonViewStates(initState);
 
         customColorSelectedOnClickFunc = new View.OnClickListener() {
             @Override
@@ -106,15 +115,6 @@ public class BasicAnimModeActivity extends AppCompatActivity implements BleContr
                 customColorSelected(v);
             }
         };
-        /*
-        View btnBack = findViewById(R.id.btnBack);
-        btnBack.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View view){
-                Intent mainIntent = new Intent(getApplicationContext(), MainActivity.class);
-                startActivity(mainIntent);
-            }
-        });
-        */
     }
 
     private void updateDimText() {
@@ -135,7 +135,6 @@ public class BasicAnimModeActivity extends AppCompatActivity implements BleContr
     @Override
     protected void onStart() {
         super.onStart();
-        bleCtrl.readCharacteristic();
     }
 
     private void initButtonViewStates() {
@@ -316,13 +315,6 @@ public class BasicAnimModeActivity extends AppCompatActivity implements BleContr
     }
 
     @Override
-    public void timeoutOccurred() {
-        // If we are using this interface, we know we aren't on the main activity, transition to it
-        Intent mainIntent = new Intent(getApplicationContext(), MainActivity.class);
-        startActivity(mainIntent);
-    }
-
-    @Override
     public void onCharacteristicRead(BluetoothGattCharacteristic characteristic) {
         mode_state = characteristic.getValue();
         updateButtonViewStates(mode_state);
@@ -338,7 +330,6 @@ public class BasicAnimModeActivity extends AppCompatActivity implements BleContr
         }
         if(characteristic.getUuid() == UUID.fromString(Constants.str_cmd_char_uuid)){
             // We sent a command to the device. Act accordingly
-
         }
     }
 

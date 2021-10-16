@@ -17,6 +17,7 @@ import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanFilter;
 import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.ScanSettings;
+import android.content.Context;
 import android.content.Intent;
 import android.media.audiofx.DynamicsProcessing;
 import android.os.Binder;
@@ -64,6 +65,8 @@ public class BleController extends Service {
     private static int nrTries;
 
     private static final long SCAN_PERIOD = 5000;
+    private static BluetoothDevice btDev;
+    private static Context context;
 
     /*
      * onCreate is called only once. When the service is first started.
@@ -132,6 +135,10 @@ public class BleController extends Service {
         }
     }
 
+    public void setContext(Context applicationContext) {
+        context = applicationContext;
+    }
+
     public class MyBinder extends Binder {
         BleController getService() {
             return BleController.this;
@@ -143,15 +150,12 @@ public class BleController extends Service {
         public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
             super.onConnectionStateChange(gatt, status, newState);
             if(status != BluetoothGatt.GATT_SUCCESS){
-                gatt.disconnect();
-                if(status == Constants.GATT_TIMEOUT){
-                    bleCtrlIf.timeoutOccurred();
-                }
+                //gatt.disconnect();
+                completedCommand(status);
                 return;
             }
             if(newState == BluetoothProfile.STATE_CONNECTED){
                 bleGatt = gatt;
-                discoverServices();
             }
             else if (newState == BluetoothProfile.STATE_DISCONNECTED){
                 bleGatt = null;
@@ -159,6 +163,7 @@ public class BleController extends Service {
             } else {
                 // Some other state change that I've decided to not do anything extra
             }
+            completedCommand(status);
         }
 
         @Override
@@ -167,17 +172,18 @@ public class BleController extends Service {
             if (status != BluetoothGatt.GATT_SUCCESS)
             {
                 Log.e(TAG, "ERROR: Service Discovery Failed.");
-                completedCommand();
+                completedCommand(status);
                 return;
             }
 
+            /*
             for(BluetoothGattService service : gatt.getServices()) {
                 uuids.add(service.getUuid());
             }
+            */
             bleGatt = gatt;
-            requestMtuSize();
             // Remove this ble command from the queue
-            completedCommand();
+            completedCommand(status);
         }
 
         @Override
@@ -187,7 +193,7 @@ public class BleController extends Service {
             if (status != BluetoothGatt.GATT_SUCCESS)
             {
                 Log.e(TAG, "ERROR: Failed to retrieve the mtu size.");
-                completedCommand();
+                completedCommand(status);
                 return;
             }
 
@@ -207,7 +213,7 @@ public class BleController extends Service {
                 }
             }
             // Remove this ble command from the queue
-            completedCommand();
+            completedCommand(status);
         }
 
         @Override
@@ -216,14 +222,14 @@ public class BleController extends Service {
             if (status != BluetoothGatt.GATT_SUCCESS)
             {
                 Log.e(TAG, "ERROR: Read for characteristic failed.");
-                completedCommand();
+                completedCommand(status);
                 return;
             }
 
             // Characteristic was read and valid, perform necessary operations
             bleCtrlIf.onCharacteristicRead(characteristic);
             // Remove this ble command from the queue
-            completedCommand();
+            completedCommand(status);
         }
 
         @Override
@@ -232,17 +238,22 @@ public class BleController extends Service {
             if (status != BluetoothGatt.GATT_SUCCESS)
             {
                 Log.e(TAG, "ERROR: Write for characteristic failed.");
-                completedCommand();
+                completedCommand(status);
                 return;
             }
             // Characteristic was sent successfully, perform necessary operations
             bleCtrlIf.onCharacteristicWrite(characteristic);
             // Remove this ble command from the queue
-            completedCommand();
+            completedCommand(status);
         }
     };
 
     // ------- Service functions ------------
+    public void setDevice(BluetoothDevice bleDev)
+    {
+        btDev = bleDev;
+    }
+
     public boolean isScanning(){
         return scanning;
     }
@@ -289,7 +300,7 @@ public class BleController extends Service {
      */
     private ScanSettings buildScanSettings() {
         ScanSettings.Builder builder = new ScanSettings.Builder();
-        builder.setScanMode(ScanSettings.SCAN_MODE_LOW_POWER);
+        builder.setScanMode(ScanSettings.SCAN_MODE_BALANCED);
         return builder.build();
     }
 
@@ -331,37 +342,11 @@ public class BleController extends Service {
     }
 
     public void connectGatt(BluetoothDevice device) {
-        if(device == null){
+        if(device == null) {
             Log.e(TAG, "ERROR: Device is null, ignoring connect request.");
             return;
         }
         bleGatt = device.connectGatt(this, false, bleGattCb);
-    }
-    private boolean discoverServices(){
-        if(bleGatt == null){
-            Log.e(TAG, "ERROR: Gatt is null, ignoring read request.");
-            return false;
-        }
-        // Pass all the checks, queue up the read and return true
-        boolean result = bleCommandQueue.add(new Runnable() {
-            @Override
-            public void run() {
-                if(!bleGatt.discoverServices()) {
-                    Log.e(TAG, "ERROR: Failed trying to discover the services.");
-                    completedCommand();
-                }else{
-                    Log.d(TAG, "Reading the available services.");
-                    nrTries++;
-                }
-            }
-        });
-
-        if(result) {
-            nextCommand();
-        } else {
-            Log.e(TAG, "ERROR: Could not queue read characteristic command");
-        }
-        return result;
     }
 
     private boolean requestMtuSize() {
@@ -375,7 +360,7 @@ public class BleController extends Service {
             public void run() {
                 if(!bleGatt.requestMtu(Constants.GATT_MAX_MTU_SIZE)) {
                     Log.e(TAG, "ERROR: Failed trying to request the max mtu size.");
-                    completedCommand();
+                    completedCommand(1);
                 }else{
                     Log.d(TAG, "Requesting the MTU Size.");
                     nrTries++;
@@ -391,81 +376,121 @@ public class BleController extends Service {
         return result;
     }
 
-    public boolean readCharacteristic(){
-        if(bleGatt == null){
-            Log.e(TAG, "ERROR: Gatt is null, ignoring read request.");
-            return false;
-        }
-        BluetoothGattService mainService = bleGatt.getService(UUID.fromString(Constants.str_ms_uuid));
-        if(mainService == null)
-        {
-            Log.e(TAG, "ERROR: Couldn't retrieve service from Gatt.");
-            return false;
-        }
-        mainChar = mainService.getCharacteristic(UUID.fromString(Constants.str_ms_char_uuid));
-        if(mainChar == null)
-        {
-            Log.e(TAG, "ERROR: Couldn't find characteristic in service.");
-            return false;
-        }
-
-        if((mainChar.getProperties() & PROPERTY_READ) == 0)
-        {
-            Log.e(TAG, "ERROR: Characteristic is not readible.");
-            return false;
-        }
-
-        // Pass all the checks, queue up the read and return true
+    private boolean queueConnect() {
         boolean result = bleCommandQueue.add(new Runnable() {
             @Override
             public void run() {
+                if(btDev == null) {
+                    Log.e(TAG, "ERROR: Device is null, ignoring connect request.");
+                    nrTries++;
+                    return;
+                }
+                bleGatt = btDev.connectGatt(context, false, bleGattCb);
+                if(bleGatt == null) {
+                    Log.e(TAG, "ERROR: Failed connecting to the device.");
+                    completedCommand(1);
+                }else{
+                    Log.d(TAG, "Connecting to the device.");
+                    nrTries++;
+                }
+            }
+        });
+        return result;
+    }
+    private boolean queueDiscoverService(){
+        boolean result = bleCommandQueue.add(new Runnable() {
+            @Override
+            public void run() {
+                if(bleGatt == null){
+                    Log.e(TAG, "ERROR: Gatt is null. Should have connected to it prior to this command.");
+                    nrTries++;
+                }
+                if(!bleGatt.discoverServices()) {
+                    Log.e(TAG, "ERROR: Failed trying to discover the services.");
+                    completedCommand(1);
+                }else{
+                    Log.d(TAG, "Reading the available services.");
+                    nrTries++;
+                }
+            }
+        });
+        return result;
+    }
+
+    private boolean queueReadCharacteristic(){
+        boolean result = bleCommandQueue.add(new Runnable() {
+            @Override
+            public void run() {
+                if(bleGatt == null){
+                    Log.e(TAG, "ERROR: Gatt is null, ignoring read request.");
+                    nrTries++;
+                    return;
+                }
+                BluetoothGattService mainService = bleGatt.getService(UUID.fromString(Constants.str_ms_uuid));
+                if(mainService == null)
+                {
+                    Log.e(TAG, "ERROR: Couldn't retrieve service from Gatt.");
+                    nrTries++;
+                    return;
+                }
+                mainChar = mainService.getCharacteristic(UUID.fromString(Constants.str_ms_char_uuid));
+                if(mainChar == null)
+                {
+                    Log.e(TAG, "ERROR: Couldn't find characteristic in service.");
+                    nrTries++;
+                    return;
+                }
+                if((mainChar.getProperties() & PROPERTY_READ) == 0)
+                {
+                    Log.e(TAG, "ERROR: Characteristic is not readible.");
+                    nrTries++;
+                    return;
+                }
+
                 if(!bleGatt.readCharacteristic(mainChar)) {
                     Log.e(TAG, "ERROR: Failed reading the characteristic.");
-                    completedCommand();
+                    completedCommand(1);
                 }else{
                     Log.d(TAG, "Reading main characteristic.");
                     nrTries++;
                 }
             }
         });
-
-        if(result) {
-            nextCommand();
-        } else {
-            Log.e(TAG, "ERROR: Could not queue read characteristic command");
-        }
         return result;
     }
 
-    public boolean writeCharacteristic(byte[] mode_state) {
-        if(bleGatt == null)
-        {
-            Log.e(TAG, "ERROR: Gatt is null, ignoring read request.");
-            return false;
-        }
-        BluetoothGattService mainService = bleGatt.getService(UUID.fromString(Constants.str_ms_uuid));
-        mainChar = null;
-        if(mainService == null){
-            Log.e(TAG, "ERROR: Could not find main service.");
-            return false;
-        }
-
-        mainChar = mainService.getCharacteristic(UUID.fromString(Constants.str_ms_char_uuid));
-        if(mainChar == null){
-            Log.e(TAG, "ERROR: Could not find characteristic.");
-            return false;
-        }
-
-        int properties = mainChar.getProperties();
-        if((properties & PROPERTY_WRITE_NO_RESPONSE) == 0){
-            Log.e(TAG, "ERROR: Main Characteristic is not writable (no response wrtie type).");
-            return false;
-        }
-
-        // Pass all the checks, queue up the write and return true
+    private boolean queueWriteCharacteristic(byte[] mode_state) {
         boolean result = bleCommandQueue.add(new Runnable() {
             @Override
             public void run() {
+                if(bleGatt == null)
+                {
+                    Log.e(TAG, "ERROR: Gatt is null, ignoring write request.");
+                    nrTries++;
+                    return;
+                }
+                BluetoothGattService mainService = bleGatt.getService(UUID.fromString(Constants.str_ms_uuid));
+                mainChar = null;
+                if(mainService == null){
+                    Log.e(TAG, "ERROR: Could not find main service.");
+                    nrTries++;
+                    return;
+                }
+
+                mainChar = mainService.getCharacteristic(UUID.fromString(Constants.str_ms_char_uuid));
+                if(mainChar == null){
+                    Log.e(TAG, "ERROR: Could not find characteristic.");
+                    nrTries++;
+                    return;
+                }
+
+                int properties = mainChar.getProperties();
+                if((properties & PROPERTY_WRITE_NO_RESPONSE) == 0){
+                    Log.e(TAG, "ERROR: Main Characteristic is not writable (no response wrtie type).");
+                    nrTries++;
+                    return;
+                }
+
                 byte[] newMode = new byte[4];
                 for(int i=0; i<4; i++) {
                     newMode[i] = mode_state[i];
@@ -474,7 +499,7 @@ public class BleController extends Service {
                 mainChar.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE);
                 if(!bleGatt.writeCharacteristic(mainChar)) {
                     Log.e(TAG, "ERROR: Failed writing the characteristic.");
-                    completedCommand();
+                    completedCommand(1);
                 }else{
                     Log.d(TAG, "Writing the main characteristic.");
                     nrTries++;
@@ -482,67 +507,224 @@ public class BleController extends Service {
             }
         });
 
-        if(result) {
-            nextCommand();
-        } else {
-            Log.e(TAG, "ERROR: Could not queue write characteristic command.");
-        }
         return result;
     }
-
-    public boolean writeCmdCharacteristic(byte[] cmd) {
-        if(bleGatt == null)
-        {
-            Log.e(TAG, "ERROR: Gatt is null, ignoring read request.");
-            return false;
-        }
-        BluetoothGattService mainService = bleGatt.getService(UUID.fromString(Constants.str_ms_uuid));
-        cmdChar = null;
-        if(mainService == null){
-            Log.e(TAG, "ERROR: Could not find main service.");
-            return false;
-        }
-
-        cmdChar = mainService.getCharacteristic(UUID.fromString(Constants.str_cmd_char_uuid));
-        if(cmdChar == null){
-            Log.e(TAG, "ERROR: Could not find characteristic.");
-            return false;
-        }
-
-        int properties = cmdChar.getProperties();
-        if((properties & PROPERTY_WRITE_NO_RESPONSE) == 0){
-            Log.e(TAG, "ERROR: Cmd Characteristic is not writable (no response wrtie type).");
-            return false;
-        }
-
-        // Pass all the checks, queue up the write and return true
+    private boolean queueWriteCmdCharacteristic(byte[] cmd) {
         boolean result = bleCommandQueue.add(new Runnable() {
             @Override
             public void run() {
+                if(bleGatt == null)
+                {
+                    Log.e(TAG, "ERROR: Gatt is null, ignoring write request.");
+                    nrTries++;
+                    return;
+                }
+                BluetoothGattService mainService = bleGatt.getService(UUID.fromString(Constants.str_ms_uuid));
+                cmdChar = null;
+                if(mainService == null){
+                    Log.e(TAG, "ERROR: Could not find main service.");
+                    nrTries++;
+                    return;
+                }
+
+                cmdChar = mainService.getCharacteristic(UUID.fromString(Constants.str_cmd_char_uuid));
+                if(cmdChar == null){
+                    Log.e(TAG, "ERROR: Could not find characteristic.");
+                    nrTries++;
+                    return;
+                }
+
+                int properties = cmdChar.getProperties();
+                if((properties & PROPERTY_WRITE_NO_RESPONSE) == 0){
+                    Log.e(TAG, "ERROR: Cmd Characteristic is not writable (no response wrtie type).");
+                    nrTries++;
+                    return;
+                }
+
                 cmdChar.setValue(cmd);
                 cmdChar.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE);
                 if(!bleGatt.writeCharacteristic(cmdChar)) {
                     Log.e(TAG, "ERROR: Failed writing the characteristic.");
-                    completedCommand();
+                    completedCommand(1);
                 }else{
                     Log.d(TAG, "Writing the cmd characteristic.");
                     nrTries++;
                 }
             }
         });
-
-        if(result) {
-            nextCommand();
-        } else {
-            Log.e(TAG, "ERROR: Could not queue write characteristic command.");
-        }
         return result;
     }
 
-    private void completedCommand() {
+    private boolean queueDisconnect(){
+        boolean result = bleCommandQueue.add(new Runnable() {
+            @Override
+            public void run() {
+                if(bleGatt == null) {
+                    Log.e(TAG, "ERROR: Device is null, ignoring disconnect request.");
+                    nrTries++;
+                    return;
+                }
+                bleGatt.disconnect();
+                Log.d(TAG, "Disconnecting");
+            }
+        });
+        return result;
+    }
+
+    public boolean readCharacteristic(){
+
+        // We are going to queue up the following:
+        /*
+            Gatt Connect
+            Discover Service
+            Read Characteristic
+            Gatt Disconnect
+         */
+        boolean bQueued = queueConnect();
+        if(!bQueued)
+        {
+            Log.e(TAG,"ERROR: Couldn't queue up connect.");
+            emptyQueue();
+            return false;
+        }
+
+        bQueued = queueDiscoverService();
+        if(!bQueued)
+        {
+            Log.e(TAG,"ERROR: Couldn't queue up discover service.");
+            emptyQueue();
+            return false;
+        }
+
+        bQueued = queueReadCharacteristic();
+        if(!bQueued)
+        {
+            Log.e(TAG,"ERROR: Couldn't queue up read characteristic.");
+            emptyQueue();
+            return false;
+        }
+
+        bQueued = queueDisconnect();
+        if(!bQueued)
+        {
+            Log.e(TAG,"ERROR: Couldn't queue up disconnect.");
+            emptyQueue();
+            return false;
+        }
+        else
+        {
+            nextCommand();
+        }
+        return true;
+    }
+
+    public boolean writeCharacteristic(byte[] mode_state) {
+        // We are going to queue up the following:
+        /*
+            Gatt Connect
+            Discover Service
+            Write the new Characteristic
+            Gatt Disconnect
+         */
+        boolean bQueued = queueConnect();
+        if(!bQueued)
+        {
+            Log.e(TAG,"ERROR: Couldn't queue up connect.");
+            emptyQueue();
+            return false;
+        }
+
+        bQueued = queueDiscoverService();
+        if(!bQueued)
+        {
+            Log.e(TAG,"ERROR: Couldn't queue up discover service.");
+            emptyQueue();
+            return false;
+        }
+
+        bQueued = queueWriteCharacteristic(mode_state);
+        if(!bQueued)
+        {
+            Log.e(TAG,"ERROR: Couldn't queue up the write characteristic.");
+            emptyQueue();
+            return false;
+        }
+
+        bQueued = queueDisconnect();
+        if(!bQueued)
+        {
+            Log.e(TAG,"ERROR: Couldn't queue up disconnect.");
+            emptyQueue();
+            return false;
+        }
+        else
+        {
+            nextCommand();
+        }
+        return true;
+    }
+
+    public boolean writeCmdCharacteristic(byte[] cmd) {
+        // We are going to queue up the following:
+        /*
+            Gatt Connect
+            Discover Service
+            Write the new cmd Characteristic
+            Gatt Disconnect
+         */
+        boolean bQueued = queueConnect();
+        if(!bQueued)
+        {
+            Log.e(TAG,"ERROR: Couldn't queue up connect.");
+            emptyQueue();
+            return false;
+        }
+
+        bQueued = queueDiscoverService();
+        if(!bQueued)
+        {
+            Log.e(TAG,"ERROR: Couldn't queue up discover service.");
+            emptyQueue();
+            return false;
+        }
+
+        bQueued = queueWriteCmdCharacteristic(cmd);
+        if(!bQueued)
+        {
+            Log.e(TAG,"ERROR: Couldn't queue up the write cmd characteristic.");
+            emptyQueue();
+            return false;
+        }
+
+        bQueued = queueDisconnect();
+        if(!bQueued)
+        {
+            Log.e(TAG,"ERROR: Couldn't queue up disconnect.");
+            emptyQueue();
+            return false;
+        }
+        else
+        {
+            nextCommand();
+        }
+        return true;
+    }
+
+    private void emptyQueue() {
+        bleCommandQueue.clear();
         commandQueueBusy = false;
-        bleCommandQueue.poll();
-        nextCommand();
+    }
+
+    private void completedCommand(int status) {
+        if(status != BluetoothGatt.GATT_SUCCESS){
+            retryCommand();
+        }
+        else
+        {
+            commandQueueBusy = false;
+            bleCommandQueue.poll();
+            nextCommand();
+        }
     }
 
     private void retryCommand(){
@@ -561,13 +743,6 @@ public class BleController extends Service {
 
     private void nextCommand() {
         if(commandQueueBusy){
-            return;
-        }
-
-        if(bleGatt == null) {
-            Log.e(TAG, "ERROR: GATT is null. Clearing the command queue.");
-            bleCommandQueue.clear();
-            commandQueueBusy = false;
             return;
         }
 
