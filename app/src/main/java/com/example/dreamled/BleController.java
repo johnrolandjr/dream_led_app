@@ -572,43 +572,10 @@ public class BleController extends Service {
     }
 
     public boolean readCharacteristic(){
-
-        // We are going to queue up the following:
-        /*
-            Gatt Connect
-            Discover Service
-            Read Characteristic
-            Gatt Disconnect
-         */
-        boolean bQueued = queueConnect();
-        if(!bQueued)
-        {
-            Log.e(TAG,"ERROR: Couldn't queue up connect.");
-            emptyQueue();
-            return false;
-        }
-
-        bQueued = queueDiscoverService();
-        if(!bQueued)
-        {
-            Log.e(TAG,"ERROR: Couldn't queue up discover service.");
-            emptyQueue();
-            return false;
-        }
-
-        bQueued = queueReadCharacteristic();
+        boolean bQueued = queueReadCharacteristic();
         if(!bQueued)
         {
             Log.e(TAG,"ERROR: Couldn't queue up read characteristic.");
-            emptyQueue();
-            return false;
-        }
-
-        bQueued = queueDisconnect();
-        if(!bQueued)
-        {
-            Log.e(TAG,"ERROR: Couldn't queue up disconnect.");
-            emptyQueue();
             return false;
         }
         else
@@ -619,42 +586,10 @@ public class BleController extends Service {
     }
 
     public boolean writeCharacteristic(byte[] mode_state) {
-        // We are going to queue up the following:
-        /*
-            Gatt Connect
-            Discover Service
-            Write the new Characteristic
-            Gatt Disconnect
-         */
-        boolean bQueued = queueConnect();
-        if(!bQueued)
-        {
-            Log.e(TAG,"ERROR: Couldn't queue up connect.");
-            emptyQueue();
-            return false;
-        }
-
-        bQueued = queueDiscoverService();
-        if(!bQueued)
-        {
-            Log.e(TAG,"ERROR: Couldn't queue up discover service.");
-            emptyQueue();
-            return false;
-        }
-
-        bQueued = queueWriteCharacteristic(mode_state);
+        boolean bQueued = queueWriteCharacteristic(mode_state);
         if(!bQueued)
         {
             Log.e(TAG,"ERROR: Couldn't queue up the write characteristic.");
-            emptyQueue();
-            return false;
-        }
-
-        bQueued = queueDisconnect();
-        if(!bQueued)
-        {
-            Log.e(TAG,"ERROR: Couldn't queue up disconnect.");
-            emptyQueue();
             return false;
         }
         else
@@ -665,42 +600,10 @@ public class BleController extends Service {
     }
 
     public boolean writeCmdCharacteristic(byte[] cmd) {
-        // We are going to queue up the following:
-        /*
-            Gatt Connect
-            Discover Service
-            Write the new cmd Characteristic
-            Gatt Disconnect
-         */
-        boolean bQueued = queueConnect();
-        if(!bQueued)
-        {
-            Log.e(TAG,"ERROR: Couldn't queue up connect.");
-            emptyQueue();
-            return false;
-        }
-
-        bQueued = queueDiscoverService();
-        if(!bQueued)
-        {
-            Log.e(TAG,"ERROR: Couldn't queue up discover service.");
-            emptyQueue();
-            return false;
-        }
-
-        bQueued = queueWriteCmdCharacteristic(cmd);
+        boolean bQueued = queueWriteCmdCharacteristic(cmd);
         if(!bQueued)
         {
             Log.e(TAG,"ERROR: Couldn't queue up the write cmd characteristic.");
-            emptyQueue();
-            return false;
-        }
-
-        bQueued = queueDisconnect();
-        if(!bQueued)
-        {
-            Log.e(TAG,"ERROR: Couldn't queue up disconnect.");
-            emptyQueue();
             return false;
         }
         else
